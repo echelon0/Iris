@@ -1,8 +1,19 @@
 
+
+struct Film {
+    void *buffer;
+    int width;
+    int height;
+
+    float dist;
+};
+
 struct Camera {
     vec3 pos;
     vec3 dir;
     vec3 up;
+
+    Film film;
 
 //    AnimatedTransform cam_to_world;
 //    shutter speed
@@ -34,11 +45,24 @@ struct Model {
     Array<int> materialSizes;
 };
 
-struct Scene {
-    Camera camera;
-    Array<Model> models;
+struct Entity {
+    Model model;
+    vec3 pos;
 };
 
-void Sample(Scene scene, void *outBuffer, int width, int height) {
+struct Scene {
+    Array<Entity> entities;
+};
+
+void Sample(Camera camera, Scene scene) {
+    bool hasAlpha = false;
+    if(sizeof(camera.film.buffer) == (sizeof(u8) * 4 * width * height)) {
+        hasAlpha = true;
+    } else if(sizeof(camera.film.buffer) != (sizeof(u8) * 3 * width * height)) {
+        LOG_ERROR("ERROR", "Invalid film buffer size.");
+        return;
+    }
+    
     
 }
+

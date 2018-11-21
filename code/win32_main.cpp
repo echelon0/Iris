@@ -1,5 +1,6 @@
 
 #define LOG_ERROR(Title, Message) MessageBoxA(0, Message, Title, MB_OK|MB_ICONERROR)
+#define u8  unsigned char
 #define u32 unsigned int
 #define f32 float
 
