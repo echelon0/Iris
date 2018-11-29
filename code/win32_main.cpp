@@ -21,10 +21,10 @@ LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
         case WM_CLOSE: {
             g_IsRunning = false;
         } break;
-            
+
         case WM_SIZE: {
-            WORD window_width = LOWORD(lParam);
-            WORD window_height = HIWORD(lParam);           
+            WORD windowWidth = LOWORD(lParam);
+            WORD windowHeight = HIWORD(lParam);           
         } break;
 
         default: {
@@ -35,12 +35,12 @@ LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
     return result;
 }
 
-ivec2 CalcWindowPos(int window_width, int window_height) {
+ivec2 CalcWindowPos(int windowWidth, int windowHeight) {
     ivec2 pos;
     int screen_width = GetSystemMetrics(SM_CXSCREEN);
     int screen_height = GetSystemMetrics(SM_CYSCREEN);
-    pos.y = (screen_height - window_height) / 2;
-    pos.x = (screen_width - window_width) / 2;
+    pos.y = (screen_height - windowHeight) / 2;
+    pos.x = (screen_width - windowWidth) / 2;
     return pos;
 }
 
@@ -58,9 +58,10 @@ f32 GetElapsedTime(LARGE_INTEGER beginCount) {
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    int window_width = 960;
-    int window_height = 580;
-    ivec2 window_pos = CalcWindowPos(window_width, window_height);
+    int windowWidth = 960;
+    int windowHeight = 580;
+    float aspect = (f32)windowWidth / (f32)windowHeight;
+    ivec2 window_pos = CalcWindowPos(windowWidth, windowHeight);
     
     WNDCLASS window_class = {};
     window_class.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -75,7 +76,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             "Iris",
             WS_VISIBLE|WS_OVERLAPPEDWINDOW,
             window_pos.x, window_pos.y,
-            window_width, window_height,
+            windowWidth, windowHeight,
             0, 0,
             hInstance, 0);
         
@@ -84,10 +85,38 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             f32 FRAME_FREQUENCY = (1000.0f / FRAME_RATE);
             g_IsRunning = true;
 
+            //----------------- testing --------------------
+            Camera camera = {};
+            camera.pos = vec3(0.0f, 0.0f, 0.0f);
+            camera.dir = vec3(0.0f, 0.0f, 1.0f);
+            camera.up = vec3(0.0f, 1.0f, 0.0f);
+            camera.right = vec3(1.0f, 0.0f, 0.0f);
+            
+            camera.film.pixelWidth = windowWidth;
+            camera.film.pixelHeight = windowHeight;
+            camera.film.buffer = (void *)malloc(camera.film.pixelWidth * camera.film.pixelHeight * sizeof(u32));
+            camera.film.worldSize = vec2(aspect, 1.0f);
+            camera.film.dist = 1.0f;
+            Scene scene = {};
+            //----------------------------------------------
+            
             while(g_IsRunning) {
                 LARGE_INTEGER beginCount;
                 QueryPerformanceCounter(&beginCount);
-                                    
+
+                if(!Sample(camera, scene)) {
+                    g_IsRunning = false;
+                    continue;
+                }
+                
+                //TODO: pad scan lines on a LONG data type boudary
+                HDC deviceContext = GetWindowDC(window);
+                RenderBuffer(deviceContext, camera.film.buffer,
+                             windowWidth, windowHeight,
+                             camera.film.pixelWidth, camera.film.pixelHeight);
+                ReleaseDC(window, deviceContext);
+                
+                
                 MSG message;
                 while(PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
                     TranslateMessage(&message);
