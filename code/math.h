@@ -96,6 +96,13 @@ struct vec3 {
         return *this;
     }
 
+    vec3& operator *= (const vec3 &rhs) {
+        this->x *= rhs.x;
+        this->y *= rhs.y;
+        this->z *= rhs.z;
+        return *this;
+    }
+
     bool operator == (vec3 rhs) {
         return (this->x == rhs.x) && (this->y == rhs.y) && (this->z == rhs.z);
     }
@@ -357,6 +364,15 @@ operator * (float scaler, vec3 vector) {
     result.x = vector.x * scaler;
     result.y = vector.y * scaler;
     result.z = vector.z * scaler;
+    return result;
+}
+
+inline vec3
+operator * (vec3 vec1, vec3 vec2) {
+    vec3 result;
+    result.x = vec1.x * vec2.x;
+    result.y = vec1.y * vec2.y;
+    result.z = vec1.z * vec2.z;
     return result;
 }
 
@@ -971,6 +987,17 @@ abs(int x) {
 }
 
 inline float
+pos_min(float x, float y) {
+    if((x >= 0) && (x < y)) {
+        return x;
+    }
+    if((y >= 0) && (y < x)) {
+        return y;
+    }
+    return min(x, y);
+}
+
+inline float
 floor(float x) {
     return (x < 0) ? ((float)(int)x - 1.0f) : ((float)(int)x);
 }
@@ -984,3 +1011,5 @@ inline float
 dtr(float degrees) {
     return (degrees / 180.0f) * (float)PI;
 }
+
+

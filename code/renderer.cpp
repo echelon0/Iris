@@ -1,5 +1,4 @@
 
-
 struct Film {
     void *buffer;
     int pixelWidth;
@@ -20,8 +19,6 @@ struct Camera {
 //    shutter speed
 //    apeture diameter
 //    focus_distance
-//    Film
-//    Medium
 };
 
 struct VertexAttribute {
@@ -46,8 +43,19 @@ struct Model {
     Array<int> materialSizes;
 };
 
+enum Shape { SPHERE, CUBE };
+struct Primitive {
+    Shape type;
+    Material material;    
+    float radius;    
+};
+
 struct Entity {
-    Model model;
+    bool isShape;
+    union {
+        Model model;
+        Primitive shape;
+    };
     vec3 pos;
 };
 
@@ -77,64 +85,78 @@ RenderBuffer(HDC deviceContext, void *buffer,
                   SRCCOPY);
 }
 
+inline u32
+get_u32_color(vec3 vec) {
+    return (((u8)(vec.x * 255.0f) << 16) | ((u8)(vec.y * 255.0f) << 8) | ((u8)(vec.z * 255.0f) << 0));
+}
+
 bool
 Sample(Camera camera, Scene scene) {
-    vec3 sphere_center = vec3(0.0, 0.0, 10.0);
-    float sphere_radius = 3.0f;
-
-    int bounceCount = 5;
+    int bounceCount = 2;
     
     u32 *pixel = (u32 *)camera.film.buffer;
     for(int y = 0; y < camera.film.pixelHeight; y++) {    
         for(int x = 0; x < camera.film.pixelWidth; x++) {
+            
             float xDist = ((x / (f32)camera.film.pixelWidth) - 0.5f) * camera.film.worldSize.x;
             float yDist = ((y / (f32)camera.film.pixelHeight) - 0.5f) * camera.film.worldSize.y;
             vec3 pFilm = camera.pos + (camera.dir * camera.film.dist) + (camera.right * xDist) + (camera.up * yDist);
             vec3 ro = camera.pos;
             vec3 rd = normalize(pFilm - camera.pos);
 
-            int r = 0;
-            int g = 0;
-            int b = 0;            
-            for(int i = 0; i < bounceCount; i++) {
+            vec3 final_color = vec3(1.0f, 1.0f, 1.0f);
+            bool hitLight = false;
+            int bounce = 0;
+            while((bounce < bounceCount) && !hitLight) {
+                float t = FLT_MAX;
+                vec3 pCollision = vec3();
+                vec3 nCollision = vec3();
+                Material matCollision = {};
+                
+                //--- Primitives ---
+                for(int i = 0; i < scene.entities.size; i++) {
+                    if(scene.entities[i].isShape) { //--- Shape ---
+                        switch(scene.entities[i].shape.type) {
+                            case SPHERE: {
+                                float a = dot(rd, rd);
+                                float b = 2.0f * dot(rd, ro - scene.entities[i].pos);
+                                float c = dot((ro - scene.entities[i].pos), (ro - scene.entities[i].pos)) - (scene.entities[i].shape.radius * scene.entities[i].shape.radius);
 
-                bool hitLight = false;
-                float a = dot(rd, rd);
-                float b = 2.0f * dot(rd, ro - sphere_center);
-                float c = dot((ro - sphere_center), (ro - sphere_center)) - (sphere_radius * sphere_radius);
-
-                float discriminant = b*b - 4.0f*a*c;
-                if(discriminant >= 0) {
-                    float t1 = (-b - (f32)sqrt(discriminant)) / 2.0f * a;
-                    float t2 = (-b + (f32)sqrt(discriminant)) / 2.0f * a;
-                    float t = min(t1, t2);                  
-                    if(t1 < 0) {
-                        t = t2;
-                    } else if(t2 < 0) {
-                        t = t1;
-                    }
-
-                    vec3 pCollision = ro + t*rd;
-                    vec3 n = normalize(pCollision - sphere_center);
-                    ro = pCollision;
-                    rd = normalize(rd + n * 2.0f * dot(-rd, n));
-                    
-                    if(t > 0.0000001f) {
-                        r += 0;
-                        g += 100;
-                        b += 0;
-                    } else {
-                        hitLight = true;
+                                float discriminant = b*b - 4.0f*a*c;
+                                if(discriminant >= 0) {
+                                    float t1 = (-b - (f32)sqrt(discriminant)) / 2.0f * a;
+                                    float t2 = (-b + (f32)sqrt(discriminant)) / 2.0f * a;
+                                    if((t1 > 0.0f) || (t2 > 0.0f)) {
+                                        float t_temp = pos_min(t1, t2);
+                                        if(t_temp < t) {
+                                            t = t_temp;
+                                            pCollision = ro + t*rd;                                         
+                                            nCollision = normalize(pCollision - scene.entities[i].pos);
+                                            matCollision = scene.entities[i].shape.material;
+                                        }
+                                    }
+                                }
+                                
+                            } break;
+                            
+                            default: {
+                            } break;
+                        }
+                    } else { //--- Model ---
                     }
                 }
-                if(hitLight || discriminant < 0) {
-                    r += 100;
-                    g += 0;
-                    b += 0;
+                
+
+                if(t == FLT_MAX)
                     break;
-                }
+                
+                ro = pCollision;
+                rd = normalize(rd + nCollision * 2.0f * dot(-rd, nCollision));
+                final_color *= matCollision.diffuse;
+                
+                bounce++;
             }
-            *pixel++ = (0 << 24) | (r << 16) | (g << 8) | (b << 0);
+            *pixel++ = get_u32_color(final_color * vec3(0.8f, 0.82f, 0.92f));
         }
     }
     return true;
