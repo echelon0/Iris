@@ -9,7 +9,7 @@ IF NOT EXIST ..\build mkdir ..\build
 pushd ..\build
 del *.pdb 1> NUL 2> NUL
 
-set compiler_flags=-nologo -W4 -WX -wd4127 -wd4996 -wd4100 -wd4189 -wd4100 -wd4505 -wd4706 /Wv:18 -nologo -Z7 -Od
+set compiler_flags=-nologo -W4 -WX -wd4127 -wd4996 -wd4100 -wd4189 -wd4100 -wd4505 -wd4706 /Wv:18 -nologo -Z7 -O2
 set linker_flags=-incremental:no User32.lib Gdi32.lib D3DCompiler.lib D3D11.lib DSound.lib winmm.lib
 
 cl %compiler_flags% ..\code\win32_main.cpp /link %linker_flags%

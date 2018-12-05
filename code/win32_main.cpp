@@ -1,21 +1,16 @@
 
 #define LOG_ERROR(Title, Message) MessageBoxA(0, Message, Title, MB_OK|MB_ICONERROR)
-#define LOOP(LOOP_COUNT) for(int COUNTER = 0; COUNTER < LOOP_COUNT; COUNTER++);
+
 #define u8  unsigned char
 #define u32 unsigned int
 #define f32 float
 
 #include <windows.h>
 #include <stdio.h>
-#include <float.h>
-#include "string.cpp"
-#include "array.cpp"
-#include "math.h"
-#include "renderer.cpp"
-#include "file_loader.cpp"
+#include "iris.h"
 
 static bool g_IsRunning = false;
-static int g_iTime = 0;
+static u32 g_iTime = 0;
 
 LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
     LRESULT result = 0;
@@ -62,7 +57,7 @@ f32 GetElapsedTime(LARGE_INTEGER beginCount) {
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     int windowWidth = 960;
     int windowHeight = 580;
-    float aspect = (f32)windowWidth / (f32)windowHeight;
+    f32 aspect = (f32)windowWidth / (f32)windowHeight;
     ivec2 window_pos = CalcWindowPos(windowWidth, windowHeight);
     
     WNDCLASS window_class = {};
@@ -103,25 +98,26 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             Scene scene = {};
             Entity entity = {};
             entity.isShape = 1;
-            entity.shape.material.diffuse = vec3(0.0f, 0.0f, 1.0f);         
+            entity.shape.material.diffuse = vec3(0.2f, 0.6f, 0.92f);         
             entity.shape.radius = 2.0f;
-            entity.pos = vec3(2.5f, 0.0f, 10.0f);
+            entity.pos = vec3(2.5f, 0.0f, 9.0f);
             scene.entities.PushBack(entity);
 
             entity.isShape = 1;
-            entity.shape.material.diffuse = vec3(1.0f, 0.0f, 0.0f);         
+            entity.shape.material.diffuse = vec3(0.8f, 0.4f, 0.3f);         
             entity.shape.radius = 2.0f;
-            entity.pos = vec3(-2.5f, 0.0f, 10.0f);
+            entity.pos = vec3(-2.5f, 0.0f, 8.0f);
             scene.entities.PushBack(entity);        
             
             //----------------------------------------------
             
             while(g_IsRunning) {
-                camera.pos.z = camera.pos.z + (f32)sin(g_iTime);
+                scene.entities[0].pos += vec3((f32)sin(g_iTime)*(-0.128f), (f32)sin(g_iTime)*0.354f, (f32)sin(g_iTime)*0.1f);
+                scene.entities[1].pos += vec3((f32)sin(g_iTime)*(0.123f), (f32)sin(g_iTime)*(-0.93f), (f32)sin(g_iTime)*0.24f);
                 LARGE_INTEGER beginCount;
                 QueryPerformanceCounter(&beginCount);
 
-                if(!Sample(camera, scene)) {
+                if(!Draw(camera, scene, 32, g_iTime)) {
                     g_IsRunning = false;
                     continue;
                 }
@@ -141,9 +137,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 }
                 
                 f32 frameDuration = GetElapsedTime(beginCount);
-                if(frameDuration < FRAME_FREQUENCY) {
-                    Sleep((DWORD)(FRAME_FREQUENCY - frameDuration));
+                f32 waitTime = FRAME_FREQUENCY - frameDuration;
+                if(waitTime > 0.0f) {
+                    Sleep((DWORD)waitTime);
                 }
+
+                char windowText[256];
+                sprintf(windowText, "Iris -- fps:%.2f", 1000.0f / (frameDuration + ((waitTime > 0)? waitTime : 0)));
+                SetWindowTextA(window, windowText);
                 g_iTime++;
             }            
         }

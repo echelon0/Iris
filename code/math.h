@@ -977,12 +977,12 @@ ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, vec3 &inter
 }
 
 inline float
-abs(float x) {
+absf(float x) {
     return (x < 0)? -x : x;
 }
 
 inline int
-abs(int x) {
+absi(int x) {
     return (x < 0)? -x : x;
 }
 
