@@ -45,11 +45,13 @@ struct Model {
     Array<int> materialSizes;
 };
 
-enum Shape { SPHERE, CUBE };
+enum Shape { SPHERE, CUBE, PLANE };
 struct Primitive {
     Shape type;
-    Material material;    
-    f32 radius;    
+    Material material;
+    f32 radius;
+    vec3 nPlane;
+    vec3 pPlane;
 };
 
 struct Entity {
@@ -109,7 +111,7 @@ ReflectionRay(vec3 r, vec3 n) {
 
 bool
 Sample(Camera camera, Scene scene) {
-    int bounceCount = 5;
+    int bounceCount = 8;
     u32 *pixel = (u32 *)camera.film.buffer;
     
     for(int y = 0; y < camera.film.pixelHeight; y++) {    
@@ -158,7 +160,19 @@ Sample(Camera camera, Scene scene) {
                             case CUBE: {
                                 //TODO
                             } break;
-                            
+
+                            case PLANE: {
+                                f32 t_temp = dot((scene.entities[i].shape.pPlane - ro), scene.entities[i].shape.nPlane) /
+                                    dot(rd, scene.entities[i].shape.nPlane);
+                                if((t_temp > 0.0f) && (t_temp < t)) {
+                                    t = t_temp;
+                                    pCollision = ro + t*rd;
+                                    nCollision = scene.entities[i].shape.nPlane;
+                                    matCollision = scene.entities[i].shape.material;
+                                }                               
+                                
+                            } break;
+                                
                             default: {
                             } break;
                         }

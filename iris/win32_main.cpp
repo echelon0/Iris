@@ -97,16 +97,25 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             
             Scene scene = {};
             Entity entity = {};
-            entity.isShape = 1;
+            entity.isShape = true;
+            entity.shape.type = SPHERE;
             entity.shape.material.diffuse = vec3(0.38f, 0.67f, 0.90f);         
             entity.shape.radius = 2.0f;
             entity.pos = vec3(2.5f, 0.0f, 9.0f);
             scene.entities.PushBack(entity);
 
-            entity.isShape = 1;
-            entity.shape.material.diffuse = vec3(0.8f, 0.99f, 0.6f);
+            entity.isShape = true;
+            entity.shape.type = SPHERE;
+            entity.shape.material.diffuse = vec3(0.97f, 0.3f, 0.2f);
             entity.shape.radius = 2.0f;
             entity.pos = vec3(-2.5f, 0.0f, 9.0f);
+            scene.entities.PushBack(entity);
+
+            entity.isShape = true;
+            entity.shape.type = PLANE;
+            entity.shape.material.diffuse = vec3(0.8f, 0.87f, 0.99f);
+            entity.shape.pPlane = vec3(0.0, -2.0f, 0.0);
+            entity.shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
             scene.entities.PushBack(entity);
 
             //----------------------------------------------
@@ -117,7 +126,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 LARGE_INTEGER beginCount;
                 QueryPerformanceCounter(&beginCount);
 
-                if(!Draw(camera, scene, 16)) {
+                if(!Draw(camera, scene, 32)) {
                     g_IsRunning = false;
                     continue;
                 }
