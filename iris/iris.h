@@ -12,15 +12,5 @@
 #include "math.h"
 #include "renderer.cpp"
 #include "file_loader.cpp"
+#include "sample_scenes.h"
 
-bool
-InitIris() {
-    if(!InitRNG())
-        return false;
-    return true;
-}
-
-void
-FreeIris() {
-    FreeRNG();
-}

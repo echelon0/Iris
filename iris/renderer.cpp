@@ -1,8 +1,12 @@
 
 #include <time.h>
+#include <mutex>
+#include <thread>
+std::mutex m;
 
 struct Film {
     void *buffer;
+    void *sumBuffer;    
     int pixelWidth;
     int pixelHeight;
     vec2 worldSize;
@@ -16,6 +20,8 @@ struct Camera {
     vec3 right;
 
     Film film;
+    u32 sampleCount;
+    bool updated;
 
 //    AnimatedTransform cam_to_world;
 //    shutter speed
@@ -65,7 +71,24 @@ struct Entity {
 
 struct Scene {
     Array<Entity> entities;
+    bool updated;
 };
+
+void
+InitCamera(Camera *camera, u32 windowWidth, u32 windowHeight) {
+    camera->pos = vec3(0.0f, 0.0f, 0.0f);
+    camera->dir = vec3(0.0f, 0.0f, 1.0f);
+    camera->up = vec3(0.0f, 1.0f, 0.0f);
+    camera->right = vec3(1.0f, 0.0f, 0.0f);
+            
+    camera->film.pixelWidth = windowWidth;
+    camera->film.pixelHeight = windowHeight;
+    camera->film.buffer = (void *)malloc(camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32));
+    camera->film.sumBuffer = (void *)calloc(camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4, 1);
+    f32 aspect = (f32)windowWidth / (f32)windowHeight;
+    camera->film.worldSize = vec2(aspect, 1.0f);
+    camera->film.dist = 1.0f;
+}
 
 void
 RenderBuffer(HDC deviceContext, void *buffer,
@@ -109,18 +132,37 @@ ReflectionRay(vec3 r, vec3 n) {
     return normalize(-r + n * 2.0f * dot(r, n));
 }
 
-bool
-Sample(Camera camera, Scene scene) {
-    int bounceCount = 8;
-    u32 *pixel = (u32 *)camera.film.buffer;
-    
-    for(int y = 0; y < camera.film.pixelHeight; y++) {    
-        for(int x = 0; x < camera.film.pixelWidth; x++) {
-            f32 xDist = ((x / (f32)camera.film.pixelWidth) - 0.5f) * camera.film.worldSize.x;
-            f32 yDist = ((y / (f32)camera.film.pixelHeight) - 0.5f) * camera.film.worldSize.y;
-            vec3 pFilm = camera.pos + (camera.dir * camera.film.dist) + (camera.right * xDist) + (camera.up * yDist);
-            vec3 ro = camera.pos;
-            vec3 rd = normalize(pFilm - camera.pos);
+void
+Draw(Camera *camera, Scene *scene) {
+
+    int bounceCount = 24;
+    if(camera->updated || scene->updated) {
+        memset(camera->film.sumBuffer, (u8)0, camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4);
+        camera->sampleCount = 0;
+        camera->updated = false;
+        scene->updated = false;
+    }
+
+    u32 *drawnPixelMap = (u32 *)calloc(camera->film.pixelWidth * camera->film.pixelHeight, sizeof(u32));
+    for(int y = 0; y < camera->film.pixelHeight; y++) {    
+        for(int x = 0; x < camera->film.pixelWidth; x++) {
+            //choose a random unused point on the film
+            u32 randX = g_RNG.rand_u32() % camera->film.pixelWidth;
+            u32 randY = g_RNG.rand_u32() % camera->film.pixelHeight;
+            u32 film_index = (randY * camera->film.pixelWidth) + randX;
+            while(drawnPixelMap[film_index]) {
+                randX = g_RNG.rand_u32() % camera->film.pixelWidth;
+                randY = g_RNG.rand_u32() % camera->film.pixelHeight;
+                film_index = randY * camera->film.pixelWidth + randX;
+            }
+            drawnPixelMap[film_index] = 1;
+
+            
+            f32 xDist = ((randX / (f32)camera->film.pixelWidth) - 0.5f) * camera->film.worldSize.x;
+            f32 yDist = ((randY / (f32)camera->film.pixelHeight) - 0.5f) * camera->film.worldSize.y;
+            vec3 pFilm = camera->pos + (camera->dir * camera->film.dist) + (camera->right * xDist) + (camera->up * yDist);
+            vec3 ro = camera->pos;
+            vec3 rd = normalize(pFilm - camera->pos);
 
             vec3 final_color = vec3(1.0f, 1.0f, 1.0f);
             int bounce = 0;
@@ -132,13 +174,13 @@ Sample(Camera camera, Scene scene) {
                 Material matCollision = {};
                 f32 t = FLT_MAX;
                 
-                for(int i = 0; i < scene.entities.size; i++) {
-                    if(scene.entities[i].isShape) { //--- Shape ---
-                        switch(scene.entities[i].shape.type) {
+                for(int i = 0; i < scene->entities.size; i++) {
+                    if(scene->entities[i].isShape) { //--- Shape ---
+                        switch(scene->entities[i].shape.type) {
                             case SPHERE: {
                                 f32 a = dot(rd, rd);
-                                f32 b = 2.0f * dot(rd, ro - scene.entities[i].pos);
-                                f32 c = dot((ro - scene.entities[i].pos), (ro - scene.entities[i].pos)) - (scene.entities[i].shape.radius * scene.entities[i].shape.radius);
+                                f32 b = 2.0f * dot(rd, ro - scene->entities[i].pos);
+                                f32 c = dot((ro - scene->entities[i].pos), (ro - scene->entities[i].pos)) - (scene->entities[i].shape.radius * scene->entities[i].shape.radius);
 
                                 f32 discriminant = b*b - 4.0f*a*c;
                                 if(discriminant >= 0) {
@@ -149,8 +191,8 @@ Sample(Camera camera, Scene scene) {
                                         if(t_temp < t) {
                                             t = t_temp;
                                             pCollision = ro + t*rd;                                         
-                                            nCollision = normalize(pCollision - scene.entities[i].pos);
-                                            matCollision = scene.entities[i].shape.material;
+                                            nCollision = normalize(pCollision - scene->entities[i].pos);
+                                            matCollision = scene->entities[i].shape.material;
                                         }
                                     }
                                 }
@@ -162,13 +204,13 @@ Sample(Camera camera, Scene scene) {
                             } break;
 
                             case PLANE: {
-                                f32 t_temp = dot((scene.entities[i].shape.pPlane - ro), scene.entities[i].shape.nPlane) /
-                                    dot(rd, scene.entities[i].shape.nPlane);
-                                if((t_temp > 0.0f) && (t_temp < t)) {
+                                f32 t_temp = dot((scene->entities[i].shape.pPlane - ro), scene->entities[i].shape.nPlane) /
+                                    dot(rd, scene->entities[i].shape.nPlane);
+                                if((t_temp > 0.0001f) && (t_temp < t)) {
                                     t = t_temp;
                                     pCollision = ro + t*rd;
-                                    nCollision = scene.entities[i].shape.nPlane;
-                                    matCollision = scene.entities[i].shape.material;
+                                    nCollision = scene->entities[i].shape.nPlane;
+                                    matCollision = scene->entities[i].shape.material;
                                 }                               
                                 
                             } break;
@@ -191,31 +233,25 @@ Sample(Camera camera, Scene scene) {
                 
                 bounce++;
             }
-            *pixel++ = get_u32_color(final_color * vec3(0.8f, 0.82f, 0.92f));
+
+            u32 color = get_u32_color(final_color * vec3(0.8f, 0.82f, 0.92f));
+            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 0] += (color >> 0) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 1] += (color >> 8) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 2] += (color >> 16) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 3] += (color >> 24) & 0xFF;
         }
     }
-    return true;
-}
-
-bool
-Draw(Camera camera, Scene scene, u32 sampleCount) {
-    u32 sizeMultiplier = 4; //times larger to make the buffer holding the sum of samples to prevent overflow
-    u32 sumBufferSize = camera.film.pixelWidth * camera.film.pixelHeight * sizeof(u32) * sizeMultiplier;
-    void *sumBuffer = (void *)calloc(sumBufferSize, 1);
-    for(u32 i = 0; i < sampleCount; i++) {
-        if(!Sample(camera, scene))
-            return false;
-
-        for(u32 i = 0; i < sumBufferSize / sizeMultiplier; i++) {
-            ((u32 *)sumBuffer)[i] += ((u8 *)camera.film.buffer)[i];
-        }
+    camera->sampleCount++;
+    u32 totalPixelChannels = camera->film.pixelWidth * camera->film.pixelHeight * 4;
+    for(u32 i = 0; i < totalPixelChannels; i++) {
+        ((u8 *)camera->film.buffer)[i] = (u8) ((f32)(((u32 *)camera->film.sumBuffer)[i]) / (f32)camera->sampleCount);
     }
 
-    for(u32 i = 0; i < sumBufferSize / sizeMultiplier; i++) {
-        ((u8 *)camera.film.buffer)[i] = (u8)(((u32 *)sumBuffer)[i] / sampleCount);
-    }
-    
-    delete sumBuffer;
-    return true;
+    delete drawnPixelMap;
 }
 
+void
+DrawMultiThread(Camera *camera, Scene *scene) {
+    std::thread t (Draw, camera, scene);
+    t.detach();
+}

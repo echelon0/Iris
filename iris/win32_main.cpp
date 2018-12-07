@@ -76,62 +76,28 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             windowWidth, windowHeight,
             0, 0,
             hInstance, 0);
-        
+
         if(window) {
             f32 FRAME_RATE = 60.0f;
             f32 FRAME_FREQUENCY = (1000.0f / FRAME_RATE);
             g_IsRunning = true;
 
-            //----------------- testing --------------------
+            //----------------- Iris --------------------
             Camera camera = {};
-            camera.pos = vec3(0.0f, 0.0f, 0.0f);
-            camera.dir = vec3(0.0f, 0.0f, 1.0f);
-            camera.up = vec3(0.0f, 1.0f, 0.0f);
-            camera.right = vec3(1.0f, 0.0f, 0.0f);
-            
-            camera.film.pixelWidth = windowWidth;
-            camera.film.pixelHeight = windowHeight;
-            camera.film.buffer = (void *)malloc(camera.film.pixelWidth * camera.film.pixelHeight * sizeof(u32));
-            camera.film.worldSize = vec2(aspect, 1.0f);
-            camera.film.dist = 1.0f;
-            
             Scene scene = {};
-            Entity entity = {};
-            entity.isShape = true;
-            entity.shape.type = SPHERE;
-            entity.shape.material.diffuse = vec3(0.38f, 0.67f, 0.90f);         
-            entity.shape.radius = 2.0f;
-            entity.pos = vec3(2.5f, 0.0f, 9.0f);
-            scene.entities.PushBack(entity);
-
-            entity.isShape = true;
-            entity.shape.type = SPHERE;
-            entity.shape.material.diffuse = vec3(0.97f, 0.3f, 0.2f);
-            entity.shape.radius = 2.0f;
-            entity.pos = vec3(-2.5f, 0.0f, 9.0f);
-            scene.entities.PushBack(entity);
-
-            entity.isShape = true;
-            entity.shape.type = PLANE;
-            entity.shape.material.diffuse = vec3(0.8f, 0.87f, 0.99f);
-            entity.shape.pPlane = vec3(0.0, -2.0f, 0.0);
-            entity.shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
-            scene.entities.PushBack(entity);
-
+            InitCamera(&camera, windowWidth, windowHeight);
+            DemoScene1(&camera, &scene);
             //----------------------------------------------
-            InitIris();
+
             while(g_IsRunning) {
-                scene.entities[0].pos += vec3((f32)sin(g_iTime)*(-0.128f), (f32)sin(g_iTime)*0.854f, (f32)sin(g_iTime)*(-1.2f));
-                scene.entities[1].pos += vec3((f32)sin(g_iTime)*(0.123f), (f32)sin(g_iTime)*(-0.93f), (f32)sin(g_iTime)*1.7f);
                 LARGE_INTEGER beginCount;
                 QueryPerformanceCounter(&beginCount);
 
-                if(!Draw(camera, scene, 32)) {
-                    g_IsRunning = false;
-                    continue;
-                }
+                //------------------- Iris -------------------
+                //Draw(&camera, &scene);
+                DrawMultiThread(&camera, &scene);
+                //--------------------------------------------
                 
-                //TODO: pad scan lines on a LONG data type boudary
                 HDC deviceContext = GetWindowDC(window);
                 RenderBuffer(deviceContext, camera.film.buffer,
                              windowWidth, windowHeight,
@@ -152,11 +118,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 }
 
                 char windowText[256];
-                sprintf(windowText, "Iris -- fps:%.2f", 1000.0f / (frameDuration + ((waitTime > 0)? waitTime : 0)));
+                sprintf(windowText, "Iris -- fps:%.2f, samples: %d", 1000.0f / (frameDuration + ((waitTime > 0)? waitTime : 0)), camera.sampleCount);
                 SetWindowTextA(window, windowText);
                 g_iTime++;
             }
-            FreeIris();
         }
     }
 }
