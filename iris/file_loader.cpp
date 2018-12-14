@@ -75,11 +75,11 @@ Model LoadObj(char *fileName) {
             fscanf(mtlFileHandle, "%f", &materials[materials.size - 1].mat.exponent);
 
         } else if(strcmp(lineID, "d") == 0) { //dissolve
-            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.dissolve);
+            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.transparency);
+            materials[materials.size - 1].mat.transparency = 1.0f - materials[materials.size - 1].mat.transparency;
             
-        } else if(strcmp(lineID, "Tr") == 0) { //1 - dissolve
-            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.dissolve);
-            materials[materials.size - 1].mat.dissolve = 1.0f - materials[materials.size - 1].mat.dissolve;
+        } else if(strcmp(lineID, "Tr") == 0) {
+            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.transparency);
             
         }  else if(strcmp(lineID, "illum") == 0) { //illumination model
             fscanf(mtlFileHandle, "%d\n", &materials[materials.size - 1].mat.illumModel);
@@ -155,11 +155,12 @@ Model LoadObj(char *fileName) {
             tempVertices[2].normal = tempVertices[0].normal;
             for(int i = 0; i < 3; i++) {
                 if(!materials[currentMatIndex].recorded) {
-                    Material finalMat = { materials[currentMatIndex].mat.diffuse,
-                                                materials[currentMatIndex].mat.specular,
-                                                materials[currentMatIndex].mat.exponent,
-                                                materials[currentMatIndex].mat.dissolve,
-                                                materials[currentMatIndex].mat.illumModel };
+                    Material finalMat = {};
+                    finalMat.diffuse = materials[currentMatIndex].mat.diffuse;
+                    finalMat.specular = materials[currentMatIndex].mat.specular;
+                    finalMat.exponent = materials[currentMatIndex].mat.exponent;
+                    finalMat.transparency = materials[currentMatIndex].mat.transparency;
+                    finalMat.illumModel = materials[currentMatIndex].mat.illumModel;
                     
                     loadedModel.materials.PushBack(finalMat);
                     loadedModel.materialBases.PushBack(loadedModel.vertexAttributes.size);
