@@ -290,26 +290,26 @@ operator - (ivec2 lhs, ivec2 rhs) {
 }
 
 inline vec2
-operator * (vec2 vector, float scaler) {
+operator * (vec2 vector, float scalar) {
     vec2 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
     return result;
 }
 
 inline vec2
-operator * (float scaler, vec2 vector) {
+operator * (float scalar, vec2 vector) {
     vec2 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
     return result;
 }
 
 inline vec2
-operator / (vec2 vector, float scaler) {
+operator / (vec2 vector, float scalar) {
     vec2 result;
-    result.x = vector.x / scaler;
-    result.y = vector.y / scaler;
+    result.x = vector.x / scalar;
+    result.y = vector.y / scalar;
     return result;    
 }
 
@@ -350,20 +350,20 @@ normalize(vec2 source) {
 }
 
 inline vec3
-operator * (vec3 vector, float scaler) {
+operator * (vec3 vector, float scalar) {
     vec3 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
-    result.z = vector.z * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
+    result.z = vector.z * scalar;
     return result;
 }
 
 inline vec3
-operator * (float scaler, vec3 vector) {
+operator * (float scalar, vec3 vector) {
     vec3 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
-    result.z = vector.z * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
+    result.z = vector.z * scalar;
     return result;
 }
 
@@ -377,11 +377,29 @@ operator * (vec3 vec1, vec3 vec2) {
 }
 
 inline vec3
-operator / (vec3 vector, float scaler) {
+operator / (vec3 vector, float scalar) {
     vec3 result;
-    result.x = vector.x / scaler;
-    result.y = vector.y / scaler;
-    result.z = vector.z / scaler;
+    result.x = vector.x / scalar;
+    result.y = vector.y / scalar;
+    result.z = vector.z / scalar;
+    return result;    
+}
+
+inline vec3
+operator / (vec3 lhs, vec3 rhs) {
+    vec3 result;
+    result.x = lhs.x / rhs.x;
+    result.y = lhs.y / rhs.y;
+    result.z = lhs.z / rhs.z;
+    return result;    
+}
+
+inline vec3
+operator + (float scalar, vec3 vector) {
+    vec3 result;
+    result.x = scalar + vector.x;
+    result.y = scalar + vector.y;
+    result.z = scalar + vector.z;
     return result;    
 }
 
@@ -413,32 +431,32 @@ operator - (vec3 vector) {
 }
 
 inline vec4
-operator * (vec4 vector, float scaler) {
+operator * (vec4 vector, float scalar) {
     vec4 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
-    result.z = vector.z * scaler;
-    result.w = vector.w * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
+    result.z = vector.z * scalar;
+    result.w = vector.w * scalar;
     return result;
 }
 
 inline vec4
-operator * (float scaler, vec4 vector) {
+operator * (float scalar, vec4 vector) {
     vec4 result;
-    result.x = vector.x * scaler;
-    result.y = vector.y * scaler;
-    result.z = vector.z * scaler;
-    result.w = vector.w * scaler;
+    result.x = vector.x * scalar;
+    result.y = vector.y * scalar;
+    result.z = vector.z * scalar;
+    result.w = vector.w * scalar;
     return result;
 }
 
 inline vec4
-operator / (vec4 vector, float scaler) {
+operator / (vec4 vector, float scalar) {
     vec4 result;
-    result.x = vector.x / scaler;
-    result.y = vector.y / scaler;
-    result.z = vector.z / scaler;
-    result.w = vector.w / scaler;
+    result.x = vector.x / scalar;
+    result.y = vector.y / scalar;
+    result.z = vector.z / scalar;
+    result.w = vector.w / scalar;
     return result;    
 }
 

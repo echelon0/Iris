@@ -173,18 +173,14 @@ Draw(Camera *camera, Scene *scene) {
             vec3 pCollision = vec3();
             vec3 nCollision = vec3();
             Material matCollision = {};
-            int d = -1;
             while((bounce < bounceCount) && !hitLight) {
                 f32 t = FLT_MAX;
                 
                 for(int i = 0; i < scene->entities.size; i++) {
-                    if(d == i)
-                        continue;
+                    
                     if(scene->entities[i].isShape) { //--- Shape ---
                         switch(scene->entities[i].shape.type) {
                             case SPHERE: {
-//                                if((dot(-nCollision, rd) < -1.0f) && !(nCollision == vec3() || pCollision == vec3()))
-//                                    break;
                                 f32 a = dot(rd, rd);
                                 f32 b = 2.0f * dot(rd, ro - scene->entities[i].pos);
                                 f32 c = dot((ro - scene->entities[i].pos), (ro - scene->entities[i].pos)) - (scene->entities[i].shape.radius * scene->entities[i].shape.radius);
@@ -196,7 +192,6 @@ Draw(Camera *camera, Scene *scene) {
                                     if((t1 > 0.0001f) || (t2 > 0.0001f)) {
                                         f32 t_temp = pos_min(t1, t2);
                                         if(t_temp < t) {
-                                            d = i;
                                             t = t_temp;
                                             pCollision = ro + t*rd;               
                                             nCollision = normalize(pCollision - scene->entities[i].pos);
@@ -215,7 +210,6 @@ Draw(Camera *camera, Scene *scene) {
                                 f32 t_temp = dot((scene->entities[i].shape.pPlane - ro), scene->entities[i].shape.nPlane) /
                                     dot(rd, scene->entities[i].shape.nPlane);
                                 if((t_temp > 0.0001f) && (t_temp < t)) {
-                                    d = i;
                                     t = t_temp;
                                     pCollision = ro + t*rd;
                                     nCollision = scene->entities[i].shape.nPlane;
@@ -232,30 +226,24 @@ Draw(Camera *camera, Scene *scene) {
                     }
                 }
                 
-
                 if(t == FLT_MAX)
                     break;
                 
                 ro = pCollision;
-                vec3 r = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
+                vec3 reflection = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
                 f32 rand = (f32)g_RNG.rand_u32() / (f32)UINT_MAX;
                 if(rand > matCollision.transparency) { //"transparency" is treated as a probability
-                    rd = GenRandomRay(nCollision, r, matCollision.reflectivity);
-                    d = -1;
-                final_color *= matCollision.diffuse;                
-                } else {
-                    f32 incidentAngle = (f32)acos(dot(-rd, nCollision));
-                    f32 sceneRefractionN = 1.0f;
-                    f32 refractedAngle = (f32)asin(sceneRefractionN * (f32)sin(incidentAngle)) / matCollision.refractionN;
-                    vec3 refractedRay = -nCollision;
-                    rotate(&refractedRay, incidentAngle, pCollision, rd);
-                    rd = refractedRay;
+                    rd = GenRandomRay(nCollision, reflection, matCollision.reflectivity);
+                    final_color *= matCollision.diffuse;                
                 }
-
                 
                 bounce++;
             }
-            
+
+            final_color = vec3((f32)pow((double)final_color.x, (double)(1.0/2.2)), //gamma correction
+                               (f32)pow((double)final_color.y, (double)(1.0/2.2)),
+                               (f32)pow((double)final_color.z, (double)(1.0/2.2)));
+            final_color = final_color / (1.0f + final_color);
             u32 color = get_u32_color(final_color * scene->skyColor);
             ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 0] += (color >> 0) & 0xFF;
             ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 1] += (color >> 8) & 0xFF;

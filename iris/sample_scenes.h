@@ -15,8 +15,8 @@ DemoScene1(Camera *camera, Scene *scene) {
     //bottom left sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
-    entity.shape.material.diffuse = rgb(148, 148, 184);
-    entity.shape.material.reflectivity = 0.5f;    
+    entity.shape.material.diffuse = rgb(255, 255, 255);
+    entity.shape.material.reflectivity = 0.8f;    
     entity.shape.radius = 1.0f;
     entity.pos = vec3(-(f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
@@ -42,9 +42,9 @@ DemoScene1(Camera *camera, Scene *scene) {
     //middle sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
-    entity.shape.material.diffuse = rgb(153, 102, 255);
-    entity.shape.material.reflectivity = 0.5f;
-    entity.shape.material.transparency = 1.0f;
+    entity.shape.material.diffuse = rgb(255, 255, 255);
+    entity.shape.material.reflectivity = 0.0f;
+    entity.shape.material.transparency = 0.8f;
     entity.shape.material.refractionN = 1.090f;
     entity.shape.radius = 0.5f;
     entity.pos = vec3(0.0f, 0.0f, 4.5f);
@@ -60,7 +60,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
     scene->entities.PushBack(entity);
     
-
+/*
     //back
     entity.isShape = true;
     entity.shape.type = PLANE;
@@ -69,7 +69,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.pPlane = vec3(0.0, 0.0f, 10.0f);
     entity.shape.nPlane = normalize(vec3(0.0f, 0.0f, -1.0f));
     scene->entities.PushBack(entity);
-/*
+
     //right
     entity.isShape = true;
     entity.shape.type = PLANE;
