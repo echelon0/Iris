@@ -166,7 +166,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 ProcessInput(&camera);
                 if(camera.sampleCount < 10000)
                     Draw(&camera, &scene);
-//                DrawMultiThread(&camera, &scene);
                 //--------------------------------------------
                 
                 HDC deviceContext = GetWindowDC(window);

@@ -14,6 +14,10 @@ struct Array {
     T &operator[](int i) {
         return data[i];
     }
+
+    const T &operator[](int i) const {
+        return data[i];
+    }    
     
     void PushBack(T entry) {
         if(size >= capacity) {

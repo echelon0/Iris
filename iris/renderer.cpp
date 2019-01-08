@@ -2,7 +2,6 @@
 #include <time.h>
 #include <mutex>
 #include <thread>
-std::mutex m;
 
 struct Film {
     void *buffer;
@@ -42,7 +41,7 @@ struct Material {
     f32 transparency;
     f32 refractionN;
     f32 reflectivity;    
-    u32 illumModel;
+    u32 illumModel; //TODO: get rid of this
 };
 
 struct Model {
@@ -243,7 +242,7 @@ Draw(Camera *camera, Scene *scene) {
             final_color = vec3((f32)pow((double)final_color.x, (double)(1.0/2.2)), //gamma correction
                                (f32)pow((double)final_color.y, (double)(1.0/2.2)),
                                (f32)pow((double)final_color.z, (double)(1.0/2.2)));
-            final_color = final_color / (1.0f + final_color);
+            //final_color = final_color / (1.0f + final_color);
             u32 color = get_u32_color(final_color * scene->skyColor);
             ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 0] += (color >> 0) & 0xFF;
             ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 1] += (color >> 8) & 0xFF;
@@ -260,8 +259,4 @@ Draw(Camera *camera, Scene *scene) {
     delete drawnPixelMap;
 }
 
-void
-DrawMultiThread(Camera *camera, Scene *scene) {
-    std::thread t (Draw, camera, scene);
-    t.detach();
-}
+
