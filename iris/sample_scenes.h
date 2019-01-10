@@ -12,33 +12,35 @@ DemoScene1(Camera *camera, Scene *scene) {
     Entity entity = {};
 
     f32 sphereSpacing = 1.15f;
+
     //bottom left sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
     entity.shape.material.diffuse = rgb(255, 255, 255);
     entity.shape.material.reflectivity = 0.8f;    
     entity.shape.radius = 1.0f;
-    entity.pos = vec3(-(f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
+    entity.offset = vec3(-(f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-
+    /*
     //bottom right sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
     entity.shape.material.diffuse = rgb(255, 255, 102);
     entity.shape.material.reflectivity = 0.5f;    
     entity.shape.radius = 1.0f;
-    entity.pos = vec3((f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
+    entity.offset = vec3((f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-
+    */
+    
     //top middle sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
     entity.shape.material.diffuse = rgb(255, 102, 102);
     entity.shape.material.reflectivity = 0.5f;        
     entity.shape.radius = 1.0f;
-    entity.pos = vec3(0.0f, 1.0f, 5.0f) * sphereSpacing;
+    entity.offset = vec3(0.0f, 1.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-
+    /*
     //middle sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
@@ -47,9 +49,9 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.material.transparency = 0.8f;
     entity.shape.material.refractionN = 1.090f;
     entity.shape.radius = 0.5f;
-    entity.pos = vec3(0.0f, 0.0f, 4.5f);
+    entity.offset = vec3(0.0f, 0.0f, 4.5f);
     scene->entities.PushBack(entity);
-
+    */
     //bottom
     entity.isShape = true;
     entity.shape.type = PLANE;
@@ -60,28 +62,8 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
     scene->entities.PushBack(entity);
     
-/*
-    //back
-    entity.isShape = true;
-    entity.shape.type = PLANE;
-    entity.shape.material.diffuse = rgb(200, 220, 250);
-    entity.shape.material.reflectivity = 0.2f;        
-    entity.shape.pPlane = vec3(0.0, 0.0f, 10.0f);
-    entity.shape.nPlane = normalize(vec3(0.0f, 0.0f, -1.0f));
+    entity.isShape = false;
+    entity.model = LoadObj("cube.obj");
+    entity.offset = vec3(1.0f, 0.0, 7.0f);
     scene->entities.PushBack(entity);
-
-    //right
-    entity.isShape = true;
-    entity.shape.type = PLANE;
-    entity.shape.material.diffuse = rgb(255, 255, 255);
-    entity.shape.pPlane = vec3(2.5, 0.0f, 0.0);
-    entity.shape.nPlane = normalize(vec3(-1.0f, 0.0f, 0.1f));
-    scene->entities.PushBack(entity);
-*/
-    //left
-    entity.isShape = true;
-    entity.shape.type = (Shape)23;
-    entity.shape.material.diffuse = rgb(255, 0, 0);
-    scene->entities.PushBack(entity);
-
 }

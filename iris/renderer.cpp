@@ -67,7 +67,7 @@ struct Entity {
         Model model;
         Primitive shape;
     };
-    vec3 pos;
+    vec3 offset;
 };
 
 struct Scene {
@@ -181,8 +181,8 @@ Draw(Camera *camera, Scene *scene) {
                         switch(scene->entities[i].shape.type) {
                             case SPHERE: {
                                 f32 a = dot(rd, rd);
-                                f32 b = 2.0f * dot(rd, ro - scene->entities[i].pos);
-                                f32 c = dot((ro - scene->entities[i].pos), (ro - scene->entities[i].pos)) - (scene->entities[i].shape.radius * scene->entities[i].shape.radius);
+                                f32 b = 2.0f * dot(rd, ro - scene->entities[i].offset);
+                                f32 c = dot((ro - scene->entities[i].offset), (ro - scene->entities[i].offset)) - (scene->entities[i].shape.radius * scene->entities[i].shape.radius);
 
                                 f32 discriminant = b*b - 4.0f*a*c;
                                 if(discriminant >= 0) {
@@ -193,7 +193,7 @@ Draw(Camera *camera, Scene *scene) {
                                         if(t_temp < t) {
                                             t = t_temp;
                                             pCollision = ro + t*rd;               
-                                            nCollision = normalize(pCollision - scene->entities[i].pos);
+                                            nCollision = normalize(pCollision - scene->entities[i].offset);
                                             matCollision = scene->entities[i].shape.material;
                                         }
                                     }
@@ -218,27 +218,29 @@ Draw(Camera *camera, Scene *scene) {
                             } break;
                                 
                             default: {
-                                vec3 intersection;
-                                vec3 v0 = vec3(0.0f, -0.4f, 4.3f);
-                                vec3 v1 = vec3(0.4f, 0.3f, 3.2f);
-                                vec3 v2 = vec3(-0.3f, 0.5f, 3.4f);
-                                vec3 n = normalize(cross(v2 - v0, v1 - v0));
-                                if(rd.x == 0.0f) {
-                                    int a = 1;
-                                }
-                                f32 t_temp;
-                                if(ray_intersects_triangle(ro, rd, v0, v1, v2, t_temp)) {
-                                    if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, -rd) > 0.0f)) {
-                                        t = t_temp;
-                                        pCollision = intersection;
-                                        nCollision = n;
-                                        matCollision = scene->entities[i].shape.material;
-                                    }
-                                }
                             } break;
                         }
                     } else { //--- Model ---
-                        //TODO: Triangle intersection tests
+                        int a = 0;
+                        for(int baseVertex = 0; baseVertex < scene->entities[i].model.vertexAttributes.size; baseVertex+=3) {
+                            
+                            vec3 intersection;
+                            vec3 v0 = scene->entities[i].model.vertexAttributes[baseVertex + 0].position + scene->entities[i].offset;
+                            vec3 v1 = scene->entities[i].model.vertexAttributes[baseVertex + 1].position + scene->entities[i].offset;
+                            vec3 v2 = scene->entities[i].model.vertexAttributes[baseVertex + 2].position + scene->entities[i].offset;
+
+                            vec3 n = normalize(cross(v2 - v0, v1 - v0));
+                            
+                            f32 t_temp;
+                            if(ray_intersects_triangle(ro, rd, v0, v1, v2, t_temp)) {
+                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, -rd) > 0.0f)) {
+                                    t = t_temp;
+                                    pCollision = intersection;
+                                    nCollision = n;
+                                    matCollision = scene->entities[i].model.materials[0];
+                                }
+                            }
+                        }
                     }
                 }
                 
