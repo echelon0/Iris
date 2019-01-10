@@ -960,38 +960,16 @@ shortest_lerp(quat a, quat b, float t) {
 }
 
 inline bool
-ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, vec3 &intersection) {
-    
-    const float EPSILON = 0.0000001f; 
-    vec3 vertex0 = v0;
-    vec3 vertex1 = v1;
-    vec3 vertex2 = v2;
-    vec3 edge1, edge2, h, s, q;
-    float a,f,u,v;
-    edge1 = vertex1 - vertex0;
-    edge2 = vertex2 - vertex0;
-    h = cross(rd, edge2);
-    a = dot(edge1, h);
-    if (a > -EPSILON && a < EPSILON)
+ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, float &t) {
+    vec3 n = normalize(cross(v2 - v0, v1 - v0));
+    t = dot(n, v0 - ro) / dot(n, rd);
+    vec3 Q = rd * t + ro;
+    if(dot(n, (cross(Q - v0, v1 - v0))) < 0.0f ||
+       dot(n, (cross(Q - v1, v2 - v1))) < 0.0f ||
+       dot(n, (cross(Q - v2, v0 - v2))) < 0.0f) {
         return false;
-    f = 1/a;
-    s = ro - vertex0;
-    u = f * dot(s, h);
-    if (u < 0.0 || u > 1.0)
-        return false;
-    q = cross(s, edge1);
-    v = f * dot(rd, q);
-    if (v < 0.0 || u + v > 1.0)
-        return false;
-    // At this stage we can compute t to find out where the intersection point is on the line.
-    float t = f * dot(edge2, q);
-    if (t > EPSILON) // ray intersection
-    {
-        intersection = ro + rd * t; 
-        return true;
     }
-    else // This means that there is a line intersection but not a ray intersection.
-        return false;
+    return true;
 }
 
 inline float

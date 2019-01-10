@@ -77,13 +77,11 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.pPlane = vec3(2.5, 0.0f, 0.0);
     entity.shape.nPlane = normalize(vec3(-1.0f, 0.0f, 0.1f));
     scene->entities.PushBack(entity);
-
+*/
     //left
     entity.isShape = true;
-    entity.shape.type = PLANE;
-    entity.shape.material.diffuse = rgb(255, 255, 255);
-    entity.shape.pPlane = vec3(-2.5, 0.0f, 0.0);
-    entity.shape.nPlane = normalize(vec3(1.0f, 0.0f, 0.1f));
+    entity.shape.type = (Shape)23;
+    entity.shape.material.diffuse = rgb(255, 0, 0);
     scene->entities.PushBack(entity);
-*/
+
 }

@@ -208,7 +208,7 @@ Draw(Camera *camera, Scene *scene) {
                             case PLANE: {
                                 f32 t_temp = dot((scene->entities[i].shape.pPlane - ro), scene->entities[i].shape.nPlane) /
                                     dot(rd, scene->entities[i].shape.nPlane);
-                                if((t_temp > 0.0001f) && (t_temp < t)) {
+                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(scene->entities[i].shape.nPlane, -rd) > 0.0f)) {
                                     t = t_temp;
                                     pCollision = ro + t*rd;
                                     nCollision = scene->entities[i].shape.nPlane;
@@ -218,6 +218,23 @@ Draw(Camera *camera, Scene *scene) {
                             } break;
                                 
                             default: {
+                                vec3 intersection;
+                                vec3 v0 = vec3(0.0f, -0.4f, 4.3f);
+                                vec3 v1 = vec3(0.4f, 0.3f, 3.2f);
+                                vec3 v2 = vec3(-0.3f, 0.5f, 3.4f);
+                                vec3 n = normalize(cross(v2 - v0, v1 - v0));
+                                if(rd.x == 0.0f) {
+                                    int a = 1;
+                                }
+                                f32 t_temp;
+                                if(ray_intersects_triangle(ro, rd, v0, v1, v2, t_temp)) {
+                                    if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, -rd) > 0.0f)) {
+                                        t = t_temp;
+                                        pCollision = intersection;
+                                        nCollision = n;
+                                        matCollision = scene->entities[i].shape.material;
+                                    }
+                                }
                             } break;
                         }
                     } else { //--- Model ---
