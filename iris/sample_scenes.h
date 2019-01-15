@@ -21,7 +21,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.radius = 1.0f;
     entity.offset = vec3(-(f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-    /*
+
     //bottom right sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
@@ -30,7 +30,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.radius = 1.0f;
     entity.offset = vec3((f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-    */
+
     
     //top middle sphere
     entity.isShape = true;
@@ -40,7 +40,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.radius = 1.0f;
     entity.offset = vec3(0.0f, 1.0f, 5.0f) * sphereSpacing;
     scene->entities.PushBack(entity);
-    /*
+
     //middle sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
@@ -51,7 +51,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.radius = 0.5f;
     entity.offset = vec3(0.0f, 0.0f, 4.5f);
     scene->entities.PushBack(entity);
-    */
+        
     //bottom
     entity.isShape = true;
     entity.shape.type = PLANE;
@@ -64,6 +64,6 @@ DemoScene1(Camera *camera, Scene *scene) {
     
     entity.isShape = false;
     entity.model = LoadObj("cube.obj");
-    entity.offset = vec3(1.0f, 0.0, 7.0f);
+    entity.offset = vec3(2.0f, 0.0, 3.0f);
     scene->entities.PushBack(entity);
 }

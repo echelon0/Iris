@@ -136,8 +136,7 @@ GenRandomRay(vec3 n, vec3 reflection, f32 rCoefficient) {
 
 void
 Draw(Camera *camera, Scene *scene) {
-
-    int bounceCount = 25;
+    int bounceCount = 8;
     if(camera->updated || scene->updated) {
         memset(camera->film.sumBuffer, (u8)0, camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4);
         camera->sampleCount = 0;
@@ -145,29 +144,17 @@ Draw(Camera *camera, Scene *scene) {
         scene->updated = false;
     }
 
-    u32 *drawnPixelMap = (u32 *)calloc(camera->film.pixelWidth * camera->film.pixelHeight, sizeof(u32));
     for(int y = 0; y < camera->film.pixelHeight; y++) {    
         for(int x = 0; x < camera->film.pixelWidth; x++) {
-            //choose a random unused point on the film
-            u32 randX = g_RNG.rand_u32() % camera->film.pixelWidth;
-            u32 randY = g_RNG.rand_u32() % camera->film.pixelHeight;
-            u32 film_index = (randY * camera->film.pixelWidth) + randX;
-            while(drawnPixelMap[film_index]) {
-                randX = g_RNG.rand_u32() % camera->film.pixelWidth;
-                randY = g_RNG.rand_u32() % camera->film.pixelHeight;
-                film_index = randY * camera->film.pixelWidth + randX;
-            }
-            drawnPixelMap[film_index] = 1;
-            
-            f32 xDist = ((randX / (f32)camera->film.pixelWidth) - 0.5f) * camera->film.worldSize.x;
-            f32 yDist = ((randY / (f32)camera->film.pixelHeight) - 0.5f) * camera->film.worldSize.y;
+            f32 xDist = ((x / (f32)camera->film.pixelWidth) - 0.5f) * camera->film.worldSize.x;
+            f32 yDist = ((y / (f32)camera->film.pixelHeight) - 0.5f) * camera->film.worldSize.y;
             vec3 pFilm = camera->pos + (camera->dir * camera->film.dist) + (camera->right * xDist) + (camera->up * yDist);
             vec3 ro = camera->pos;
             vec3 rd = normalize(pFilm - camera->pos);
 
-            vec3 final_color = vec3(1.0f, 1.0f, 1.0f);
             int bounce = 0;
             bool hitLight = false;
+            vec3 final_color = vec3(1.0f, 1.0f, 1.0f);      
 
             vec3 pCollision = vec3();
             vec3 nCollision = vec3();
@@ -176,7 +163,6 @@ Draw(Camera *camera, Scene *scene) {
                 f32 t = FLT_MAX;
                 
                 for(int i = 0; i < scene->entities.size; i++) {
-                    
                     if(scene->entities[i].isShape) { //--- Shape ---
                         switch(scene->entities[i].shape.type) {
                             case SPHERE: {
@@ -222,22 +208,20 @@ Draw(Camera *camera, Scene *scene) {
                         }
                     } else { //--- Model ---
                         int a = 0;
-                        for(int baseVertex = 0; baseVertex < scene->entities[i].model.vertexAttributes.size; baseVertex+=3) {
-                            
-                            vec3 intersection;
+                        for(int baseVertex = 100; baseVertex < scene->entities[i].model.vertexAttributes.size; baseVertex+=3) {
+                            vec3 n = scene->entities[i].model.vertexAttributes[baseVertex].normal;                          
                             vec3 v0 = scene->entities[i].model.vertexAttributes[baseVertex + 0].position + scene->entities[i].offset;
                             vec3 v1 = scene->entities[i].model.vertexAttributes[baseVertex + 1].position + scene->entities[i].offset;
                             vec3 v2 = scene->entities[i].model.vertexAttributes[baseVertex + 2].position + scene->entities[i].offset;
 
-                            vec3 n = normalize(cross(v2 - v0, v1 - v0));
-                            
+                            vec3 intersection;                      
                             f32 t_temp;
-                            if(ray_intersects_triangle(ro, rd, v0, v1, v2, t_temp)) {
+                            if(ray_intersects_triangle(ro, rd, v0, v1, v2, n, t_temp)) {
                                 if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, -rd) > 0.0f)) {
                                     t = t_temp;
                                     pCollision = intersection;
                                     nCollision = n;
-                                    matCollision = scene->entities[i].model.materials[0];
+                                    matCollision = scene->entities[i].model.materials[0]; //TODO: change materials based on vertex
                                 }
                             }
                         }
@@ -249,24 +233,29 @@ Draw(Camera *camera, Scene *scene) {
                 
                 ro = pCollision;
                 vec3 reflection = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
-                f32 rand = (f32)g_RNG.rand_u32() / (f32)UINT_MAX;
-                if(rand > matCollision.transparency) { //"transparency" is treated as a probability
-                    rd = GenRandomRay(nCollision, reflection, matCollision.reflectivity);
-                    final_color *= matCollision.diffuse;                
+                rd = GenRandomRay(nCollision, reflection, 0.5f);
+                bool TEST_REFLECTION = false;
+                if(TEST_REFLECTION) {
+                    f32 rand = (f32)g_RNG.rand_u32() / (f32)UINT_MAX;
+                    if(rand > matCollision.transparency) { //"transparency" is treated as a probability
+                        rd = GenRandomRay(nCollision, reflection, matCollision.reflectivity);
+                    }
                 }
-                
+                final_color *= matCollision.diffuse;
+
                 bounce++;
             }
 
             final_color = vec3((f32)pow((double)final_color.x, (double)(1.0/2.2)), //gamma correction
                                (f32)pow((double)final_color.y, (double)(1.0/2.2)),
                                (f32)pow((double)final_color.z, (double)(1.0/2.2)));
-            //final_color = final_color / (1.0f + final_color);
+            //final_color = final_color / (1.0f + final_color); //tone mapping
             u32 color = get_u32_color(final_color * scene->skyColor);
-            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 0] += (color >> 0) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 1] += (color >> 8) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 2] += (color >> 16) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(film_index * 4) + 3] += (color >> 24) & 0xFF;
+            u32 filmIndex = (y * camera->film.pixelWidth) + x;     
+            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 0] += (color >> 0) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 1] += (color >> 8) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 2] += (color >> 16) & 0xFF;
+            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 3] += (color >> 24) & 0xFF;
         }
     }
     camera->sampleCount++;
@@ -275,7 +264,6 @@ Draw(Camera *camera, Scene *scene) {
         ((u8 *)camera->film.buffer)[i] = (u8) ((f32)(((u32 *)camera->film.sumBuffer)[i]) / (f32)camera->sampleCount);
     }
 
-    delete drawnPixelMap;
 }
 
 

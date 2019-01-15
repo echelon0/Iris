@@ -960,8 +960,7 @@ shortest_lerp(quat a, quat b, float t) {
 }
 
 inline bool
-ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, float &t) {
-    vec3 n = normalize(cross(v2 - v0, v1 - v0));
+ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, vec3 n, float &t) {
     t = dot(n, v0 - ro) / dot(n, rd);
     vec3 Q = rd * t + ro;
     if(dot(n, (cross(Q - v0, v1 - v0))) < 0.0f ||

@@ -149,8 +149,8 @@ Model LoadObj(char *fileName) {
             tempVertices[2].position = positions[v3-1];
             tempVertices[2].texcoord = texcoords[vt3-1];
 
-            tempVertices[0].normal = cross(tempVertices[1].position - tempVertices[0].position,
-                                            tempVertices[2].position - tempVertices[0].position);
+            tempVertices[0].normal = cross(tempVertices[2].position - tempVertices[0].position, //left-handed normal
+                                            tempVertices[1].position - tempVertices[0].position);
             tempVertices[1].normal = tempVertices[0].normal;
             tempVertices[2].normal = tempVertices[0].normal;
             for(int i = 0; i < 3; i++) {
