@@ -1,8 +1,4 @@
 
-#include <time.h>
-#include <mutex>
-#include <thread>
-
 struct Film {
     void *buffer;
     void *sumBuffer;    
@@ -21,11 +17,6 @@ struct Camera {
     Film film;
     u32 sampleCount;
     bool updated;
-
-//    AnimatedTransform cam_to_world;
-//    shutter speed
-//    apeture diameter
-//    focus_distance
 };
 
 struct VertexAttribute {
@@ -41,7 +32,6 @@ struct Material {
     f32 transparency;
     f32 refractionN;
     f32 reflectivity;    
-    u32 illumModel; //TODO: get rid of this
 };
 
 struct Model {
@@ -52,7 +42,18 @@ struct Model {
     Array<int> materialSizes;
 };
 
-enum Shape { SPHERE, CUBE, PLANE };
+int
+GetMaterialIndex(Model model, int vertexIndex) {
+    for(int baseIndex = 0; baseIndex < model.materialBases.size; baseIndex++) {
+        if(vertexIndex >= model.materialBases[baseIndex] &&
+           (vertexIndex < model.materialBases[baseIndex]+ model.materialSizes[baseIndex])) {
+            return baseIndex;
+        }
+    };
+    return -1;
+}
+
+enum Shape { SPHERE, PLANE };
 struct Primitive {
     Shape type;
     Material material;
@@ -162,13 +163,14 @@ Draw(Camera *camera, Scene *scene) {
             while((bounce < bounceCount) && !hitLight) {
                 f32 t = FLT_MAX;
                 
-                for(int i = 0; i < scene->entities.size; i++) {
-                    if(scene->entities[i].isShape) { //--- Shape ---
-                        switch(scene->entities[i].shape.type) {
+                for(int entityIndex = 0; entityIndex < scene->entities.size; entityIndex++) {
+                    Entity currentEntity = scene->entities[entityIndex];
+                    if(currentEntity.isShape) { //--- Shape ---
+                        switch(currentEntity.shape.type) {
                             case SPHERE: {
                                 f32 a = dot(rd, rd);
-                                f32 b = 2.0f * dot(rd, ro - scene->entities[i].offset);
-                                f32 c = dot((ro - scene->entities[i].offset), (ro - scene->entities[i].offset)) - (scene->entities[i].shape.radius * scene->entities[i].shape.radius);
+                                f32 b = 2.0f * dot(rd, ro - currentEntity.offset);
+                                f32 c = dot((ro - currentEntity.offset), (ro - currentEntity.offset)) - (currentEntity.shape.radius * currentEntity.shape.radius);
 
                                 f32 discriminant = b*b - 4.0f*a*c;
                                 if(discriminant >= 0) {
@@ -179,26 +181,22 @@ Draw(Camera *camera, Scene *scene) {
                                         if(t_temp < t) {
                                             t = t_temp;
                                             pCollision = ro + t*rd;               
-                                            nCollision = normalize(pCollision - scene->entities[i].offset);
-                                            matCollision = scene->entities[i].shape.material;
+                                            nCollision = normalize(pCollision - currentEntity.offset);
+                                            matCollision = currentEntity.shape.material;
                                         }
                                     }
                                 }
                                 
                             } break;
 
-                            case CUBE: {
-                                //TODO
-                            } break;
-
                             case PLANE: {
-                                f32 t_temp = dot((scene->entities[i].shape.pPlane - ro), scene->entities[i].shape.nPlane) /
-                                    dot(rd, scene->entities[i].shape.nPlane);
-                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(scene->entities[i].shape.nPlane, -rd) > 0.0f)) {
+                                f32 t_temp = dot((currentEntity.shape.pPlane - ro), currentEntity.shape.nPlane) /
+                                    dot(rd, currentEntity.shape.nPlane);
+                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(currentEntity.shape.nPlane, -rd) > 0.0f)) {
                                     t = t_temp;
                                     pCollision = ro + t*rd;
-                                    nCollision = scene->entities[i].shape.nPlane;
-                                    matCollision = scene->entities[i].shape.material;
+                                    nCollision = currentEntity.shape.nPlane;
+                                    matCollision = currentEntity.shape.material;
                                 }                               
                                 
                             } break;
@@ -207,21 +205,20 @@ Draw(Camera *camera, Scene *scene) {
                             } break;
                         }
                     } else { //--- Model ---
-                        int a = 0;
-                        for(int baseVertex = 100; baseVertex < scene->entities[i].model.vertexAttributes.size; baseVertex+=3) {
-                            vec3 n = scene->entities[i].model.vertexAttributes[baseVertex].normal;                          
-                            vec3 v0 = scene->entities[i].model.vertexAttributes[baseVertex + 0].position + scene->entities[i].offset;
-                            vec3 v1 = scene->entities[i].model.vertexAttributes[baseVertex + 1].position + scene->entities[i].offset;
-                            vec3 v2 = scene->entities[i].model.vertexAttributes[baseVertex + 2].position + scene->entities[i].offset;
+                        for(int baseVertex = 0; baseVertex < currentEntity.model.vertexAttributes.size; baseVertex+=3) {
+                            vec3 n = currentEntity.model.vertexAttributes[baseVertex].normal;                          
+                            vec3 v0 = currentEntity.model.vertexAttributes[baseVertex + 0].position + currentEntity.offset;
+                            vec3 v1 = currentEntity.model.vertexAttributes[baseVertex + 1].position + currentEntity.offset;
+                            vec3 v2 = currentEntity.model.vertexAttributes[baseVertex + 2].position + currentEntity.offset;
 
                             vec3 intersection;                      
                             f32 t_temp;
                             if(ray_intersects_triangle(ro, rd, v0, v1, v2, n, t_temp)) {
-                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, -rd) > 0.0f)) {
+                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, rd) > 0.0f)) {
                                     t = t_temp;
                                     pCollision = intersection;
                                     nCollision = n;
-                                    matCollision = scene->entities[i].model.materials[0]; //TODO: change materials based on vertex
+                                    matCollision = currentEntity.model.materials[GetMaterialIndex(currentEntity.model, baseVertex)];
                                 }
                             }
                         }
@@ -234,13 +231,7 @@ Draw(Camera *camera, Scene *scene) {
                 ro = pCollision;
                 vec3 reflection = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
                 rd = GenRandomRay(nCollision, reflection, 0.5f);
-                bool TEST_REFLECTION = false;
-                if(TEST_REFLECTION) {
-                    f32 rand = (f32)g_RNG.rand_u32() / (f32)UINT_MAX;
-                    if(rand > matCollision.transparency) { //"transparency" is treated as a probability
-                        rd = GenRandomRay(nCollision, reflection, matCollision.reflectivity);
-                    }
-                }
+
                 final_color *= matCollision.diffuse;
 
                 bounce++;
@@ -249,7 +240,6 @@ Draw(Camera *camera, Scene *scene) {
             final_color = vec3((f32)pow((double)final_color.x, (double)(1.0/2.2)), //gamma correction
                                (f32)pow((double)final_color.y, (double)(1.0/2.2)),
                                (f32)pow((double)final_color.z, (double)(1.0/2.2)));
-            //final_color = final_color / (1.0f + final_color); //tone mapping
             u32 color = get_u32_color(final_color * scene->skyColor);
             u32 filmIndex = (y * camera->film.pixelWidth) + x;     
             ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 0] += (color >> 0) & 0xFF;

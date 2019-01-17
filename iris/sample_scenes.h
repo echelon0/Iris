@@ -16,7 +16,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     //bottom left sphere
     entity.isShape = true;
     entity.shape.type = SPHERE;
-    entity.shape.material.diffuse = rgb(255, 255, 255);
+    entity.shape.material.diffuse = rgb(255, 25, 0);
     entity.shape.material.reflectivity = 0.8f;    
     entity.shape.radius = 1.0f;
     entity.offset = vec3(-(f32)sqrt(3.0f)/2.0f, -1.0f/2.0f, 5.0f) * sphereSpacing;
@@ -51,7 +51,7 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.radius = 0.5f;
     entity.offset = vec3(0.0f, 0.0f, 4.5f);
     scene->entities.PushBack(entity);
-        
+
     //bottom
     entity.isShape = true;
     entity.shape.type = PLANE;
@@ -62,8 +62,8 @@ DemoScene1(Camera *camera, Scene *scene) {
     entity.shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
     scene->entities.PushBack(entity);
     
-    entity.isShape = false;
-    entity.model = LoadObj("cube.obj");
-    entity.offset = vec3(2.0f, 0.0, 3.0f);
-    scene->entities.PushBack(entity);
+//    entity.isShape = false;
+//    entity.model = LoadObj("cube.obj");
+//    entity.offset = vec3(2.0f, 1.0, 3.0f);
+//    scene->entities.PushBack(entity);
 }

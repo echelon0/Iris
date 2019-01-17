@@ -81,8 +81,6 @@ Model LoadObj(char *fileName) {
         } else if(strcmp(lineID, "Tr") == 0) {
             fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.transparency);
             
-        }  else if(strcmp(lineID, "illum") == 0) { //illumination model
-            fscanf(mtlFileHandle, "%d\n", &materials[materials.size - 1].mat.illumModel);
         }
     }
     
@@ -160,7 +158,6 @@ Model LoadObj(char *fileName) {
                     finalMat.specular = materials[currentMatIndex].mat.specular;
                     finalMat.exponent = materials[currentMatIndex].mat.exponent;
                     finalMat.transparency = materials[currentMatIndex].mat.transparency;
-                    finalMat.illumModel = materials[currentMatIndex].mat.illumModel;
                     
                     loadedModel.materials.PushBack(finalMat);
                     loadedModel.materialBases.PushBack(loadedModel.vertexAttributes.size);
