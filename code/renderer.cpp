@@ -61,13 +61,17 @@ rgb(u32 r, u32 g, u32 b) {
 }
 
 inline vec3
-GenRandomRay(vec3 n, vec3 reflection, f32 rCoefficient) {
-    vec3 rd = normalize(vec3(((f32)g_RNG.rand_u32() / (f32)UINT_MAX) * 2.0f - 1.0f,
-                             ((f32)g_RNG.rand_u32() / (f32)UINT_MAX) * 2.0f - 1.0f,
-                             ((f32)g_RNG.rand_u32() / (f32)UINT_MAX) * 2.0f - 1.0f));
+GenRandomRay(vec3 n) {
+    f32 theta = (f32)g_RNG.rand_u32();
+    f32 phi = (f32)g_RNG.rand_u32();
+    f32 x = (f32)sin(theta) * (f32)cos(phi);
+    f32 y = (f32)sin(theta) * (f32)sin(phi);
+    f32 z = (f32)cos(theta);
+
+    vec3 rd = vec3(x, y, z);
     if(dot(n, rd) < 0.0f)
         rd = rd * -1.0f;
-    return lerp(rd, reflection, rCoefficient);
+    return rd;
 }
 
 void
@@ -165,7 +169,7 @@ Draw(Camera *camera, Scene *scene) {
                 
                 ro = pCollision;
                 vec3 reflection = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
-                rd = GenRandomRay(nCollision, reflection, 0.5f);
+                rd = GenRandomRay(nCollision);
 
                 final_color *= matCollision.diffuse;
 
