@@ -31,7 +31,6 @@ struct Material {
     f32 exponent;
     f32 transparency;
     f32 refractionN;
-    f32 reflectivity;    
 };
 
 struct Model {
@@ -51,8 +50,15 @@ struct Primitive {
     vec3 pPlane;
 };
 
+struct EmissionProfile {
+    f32 flux;
+    vec3 color;
+};
+
 struct Entity {
     bool isShape;
+    bool isEmitter;
+    EmissionProfile emission;
     union {
         Model model;
         Primitive shape;
@@ -64,6 +70,14 @@ struct Scene {
     Array<Entity> entities;
     vec3 skyColor;
     bool updated;
+};
+
+struct CollisionInfo {
+    vec3 p;
+    vec3 n;
+    Material entityMat = {};
+    u32 entityIndex;
+    f32 t;
 };
 
 int GetMaterialIndex(Model model, int vertexIndex);

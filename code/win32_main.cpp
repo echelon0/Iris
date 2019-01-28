@@ -164,8 +164,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
                 //------------------- Iris -------------------
                 ProcessInput(&camera);
-                if(camera.sampleCount < 10000)
-                    Draw(&camera, &scene);
+                if(camera.sampleCount < 1000) {
+                    Draw( &camera, &scene);
+                }
                 //--------------------------------------------
                 
                 HDC deviceContext = GetWindowDC(window);

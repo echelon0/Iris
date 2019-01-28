@@ -148,6 +148,13 @@ struct vec3 {
         return *this;
     }
 
+    vec3& operator += (const float rhs) {
+        this->x += rhs;
+        this->y += rhs;
+        this->z += rhs;
+        return *this;
+    }
+
     vec3& operator -= (const vec3 &rhs) {
         this->x -= rhs.x;
         this->y -= rhs.y;
@@ -155,10 +162,38 @@ struct vec3 {
         return *this;
     }
 
+    vec3& operator -= (const float rhs) {
+        this->x -= rhs;
+        this->y -= rhs;
+        this->z -= rhs;
+        return *this;
+    }
+
     vec3& operator *= (const vec3 &rhs) {
         this->x *= rhs.x;
         this->y *= rhs.y;
         this->z *= rhs.z;
+        return *this;
+    }
+
+    vec3& operator *= (const float rhs) {
+        this->x *= rhs;
+        this->y *= rhs;
+        this->z *= rhs;
+        return *this;
+    }
+
+    vec3& operator /= (const vec3 &rhs) {
+        this->x /= rhs.x;
+        this->y /= rhs.y;
+        this->z /= rhs.z;
+        return *this;
+    }
+
+    vec3& operator /= (const float rhs) {
+        this->x /= rhs;
+        this->y /= rhs;
+        this->z /= rhs;
         return *this;
     }
 
@@ -639,6 +674,21 @@ magnitude(vec4 source) {
     return sqrtf(source.x * source.x + source.y * source.y + source.z * source.z + source.w * source.w);
 }
 
+inline float
+dist(vec2 a, vec2 b) {
+    return magnitude(b - a);
+}
+
+inline float
+dist(vec3 a, vec3 b) {
+    return magnitude(b - a);
+}
+
+inline float
+dist(vec4 a, vec4 b) {
+    return magnitude(b - a);
+}
+
 float magnitude(quat q) {
     return (float)sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
 }
@@ -1015,3 +1065,5 @@ inline float
 dtr(float degrees) {
     return (degrees / 180.0f) * (float)PI;
 }
+
+

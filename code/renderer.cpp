@@ -60,8 +60,20 @@ rgb(u32 r, u32 g, u32 b) {
     return vec3((f32)r / 255.0f, (f32)g / 255.0f, (f32)b / 255.0f);
 }
 
-inline vec3
-GenRandomRay(vec3 n) {
+vec2
+UniformSampleDisk() {
+    f32 r = absf((f32)cos((f32)g_RNG.rand_u32()));
+    f32 theta = (f32)g_RNG.rand_u32();
+
+    f32 x = r * (f32)cos(theta);
+    f32 y = r * (f32)sin(theta);
+    
+    vec2 p = vec2(x, y);
+    return p;
+}
+
+vec3
+UniformSampleHemisphere(vec3 n) {
     f32 theta = (f32)g_RNG.rand_u32();
     f32 phi = (f32)g_RNG.rand_u32();
     f32 x = (f32)sin(theta) * (f32)cos(phi);
@@ -72,6 +84,109 @@ GenRandomRay(vec3 n) {
     if(dot(n, rd) < 0.0f)
         rd = rd * -1.0f;
     return rd;
+}
+
+vec3
+CosineWeightedSampleHemisphere(vec3 n) {
+    vec2 pDisk = UniformSampleDisk();
+    f32 z = (f32)sqrt(max(0.0f, 1.0f - (pDisk.x * pDisk.x) - (pDisk.y * pDisk.y)));
+    return vec3(pDisk.x, pDisk.y, z);
+}
+
+CollisionInfo
+CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
+    CollisionInfo result;
+    
+    result.t = FLT_MAX;
+                
+    for(int entityIndex = 0; entityIndex < scene->entities.size; entityIndex++) {
+        Entity currentEntity = scene->entities[entityIndex];
+        if(currentEntity.isShape) { //--- Shape ---
+            switch(currentEntity.shape.type) {
+                case SPHERE: {
+                    f32 a = dot(rd, rd);
+                    f32 b = 2.0f * dot(rd, ro - currentEntity.offset);
+                    f32 c = dot((ro - currentEntity.offset), (ro - currentEntity.offset)) - (currentEntity.shape.radius * currentEntity.shape.radius);
+
+                    f32 discriminant = b*b - 4.0f*a*c;
+                    if(discriminant >= 0) {
+                        f32 t1 = (-b - (f32)sqrt(discriminant)) / 2.0f * a;
+                        f32 t2 = (-b + (f32)sqrt(discriminant)) / 2.0f * a;
+                        if((t1 > 0.0001f) || (t2 > 0.0001f)) {
+                            f32 t_temp = pos_min(t1, t2);
+                            if(t_temp < result.t) {
+                                result.t = t_temp;
+                                result.p = ro + result.t*rd;               
+                                result.n = normalize(result.p - currentEntity.offset);
+                                result.entityMat = currentEntity.shape.material;
+                                result.entityIndex = entityIndex;                                      
+                            }
+                        }
+                    }
+                                
+                } break;
+
+                case PLANE: {
+                    f32 t_temp = dot((currentEntity.shape.pPlane - ro), currentEntity.shape.nPlane) /
+                        dot(rd, currentEntity.shape.nPlane);
+                    if((t_temp > 0.0001f) && (t_temp < result.t) && (dot(currentEntity.shape.nPlane, -rd) > 0.0f)) {
+                        result.t = t_temp;
+                        result.p = ro + result.t*rd;
+                        result.n = currentEntity.shape.nPlane;
+                        result.entityMat = currentEntity.shape.material;
+                        result.entityIndex = entityIndex;                              
+                    }                               
+                                
+                } break;
+                                
+                default: {
+                } break;
+            }
+        } else { //--- Model ---
+            for(int baseVertex = 0; baseVertex < currentEntity.model.vertexAttributes.size; baseVertex+=3) {
+                vec3 n = currentEntity.model.vertexAttributes[baseVertex].normal;                          
+                vec3 v0 = currentEntity.model.vertexAttributes[baseVertex + 0].position + currentEntity.offset;
+                vec3 v1 = currentEntity.model.vertexAttributes[baseVertex + 1].position + currentEntity.offset;
+                vec3 v2 = currentEntity.model.vertexAttributes[baseVertex + 2].position + currentEntity.offset;
+
+                vec3 intersection;                      
+                f32 t_temp;
+                if(ray_intersects_triangle(ro, rd, v0, v1, v2, n, t_temp)) {
+                    if((t_temp > 0.0001f) && (t_temp < result.t) && (dot(n, rd) > 0.0f)) {
+                        result.t = t_temp;
+                        result.p = intersection;
+                        result.n = n;
+                        result.entityMat = currentEntity.model.materials[GetMaterialIndex(currentEntity.model, baseVertex)];
+                        result.entityIndex = entityIndex;                              
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+f32
+ApproximateUnoccludedArea(Scene *scene, u32 objectIndex, vec3 p, u32 nSamples) {
+    Entity object = scene->entities[objectIndex];
+    f32 dist = magnitude(object.offset - p);
+    vec3 rayToObject = normalize(object.offset - p);    
+    f32 coneAngle = (f32)atan(object.shape.radius / dist);
+
+    CollisionInfo collision = {};
+    u32 numberOfHits = 0;
+    
+    for(u32 sampleIndex = 0; sampleIndex < nSamples; sampleIndex++) {
+        vec3 samplePoint = CosineWeightedSampleHemisphere(-rayToObject);
+        samplePoint += scene->entities[objectIndex].offset;
+        vec3 sampleRay = normalize(samplePoint - p);
+        collision = CollisionRoutine(scene, p, sampleRay);
+        if((collision.t != FLT_MAX) && (collision.entityIndex == objectIndex))
+            numberOfHits++;
+    }
+    
+    return (f32)numberOfHits / (f32)nSamples;
 }
 
 void
@@ -93,93 +208,64 @@ Draw(Camera *camera, Scene *scene) {
             vec3 rd = normalize(pFilm - camera->pos);
 
             int bounce = 0;
-            bool hitLight = false;
-            vec3 final_color = vec3(1.0f, 1.0f, 1.0f);      
+            vec3 finalColor = vec3(1.0f, 1.0f, 1.0f);      
 
-            vec3 pCollision = vec3();
-            vec3 nCollision = vec3();
-            Material matCollision = {};
-            while((bounce < bounceCount) && !hitLight) {
-                f32 t = FLT_MAX;
-                
-                for(int entityIndex = 0; entityIndex < scene->entities.size; entityIndex++) {
-                    Entity currentEntity = scene->entities[entityIndex];
-                    if(currentEntity.isShape) { //--- Shape ---
-                        switch(currentEntity.shape.type) {
-                            case SPHERE: {
-                                f32 a = dot(rd, rd);
-                                f32 b = 2.0f * dot(rd, ro - currentEntity.offset);
-                                f32 c = dot((ro - currentEntity.offset), (ro - currentEntity.offset)) - (currentEntity.shape.radius * currentEntity.shape.radius);
+            CollisionInfo collision = {};
+            f32 attenuationDist = 1.0f;
+            while(bounce < bounceCount) {
 
-                                f32 discriminant = b*b - 4.0f*a*c;
-                                if(discriminant >= 0) {
-                                    f32 t1 = (-b - (f32)sqrt(discriminant)) / 2.0f * a;
-                                    f32 t2 = (-b + (f32)sqrt(discriminant)) / 2.0f * a;
-                                    if((t1 > 0.0001f) || (t2 > 0.0001f)) {
-                                        f32 t_temp = pos_min(t1, t2);
-                                        if(t_temp < t) {
-                                            t = t_temp;
-                                            pCollision = ro + t*rd;               
-                                            nCollision = normalize(pCollision - currentEntity.offset);
-                                            matCollision = currentEntity.shape.material;
-                                        }
-                                    }
-                                }
-                                
-                            } break;
-
-                            case PLANE: {
-                                f32 t_temp = dot((currentEntity.shape.pPlane - ro), currentEntity.shape.nPlane) /
-                                    dot(rd, currentEntity.shape.nPlane);
-                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(currentEntity.shape.nPlane, -rd) > 0.0f)) {
-                                    t = t_temp;
-                                    pCollision = ro + t*rd;
-                                    nCollision = currentEntity.shape.nPlane;
-                                    matCollision = currentEntity.shape.material;
-                                }                               
-                                
-                            } break;
-                                
-                            default: {
-                            } break;
-                        }
-                    } else { //--- Model ---
-                        for(int baseVertex = 0; baseVertex < currentEntity.model.vertexAttributes.size; baseVertex+=3) {
-                            vec3 n = currentEntity.model.vertexAttributes[baseVertex].normal;                          
-                            vec3 v0 = currentEntity.model.vertexAttributes[baseVertex + 0].position + currentEntity.offset;
-                            vec3 v1 = currentEntity.model.vertexAttributes[baseVertex + 1].position + currentEntity.offset;
-                            vec3 v2 = currentEntity.model.vertexAttributes[baseVertex + 2].position + currentEntity.offset;
-
-                            vec3 intersection;                      
-                            f32 t_temp;
-                            if(ray_intersects_triangle(ro, rd, v0, v1, v2, n, t_temp)) {
-                                if((t_temp > 0.0001f) && (t_temp < t) && (dot(n, rd) > 0.0f)) {
-                                    t = t_temp;
-                                    pCollision = intersection;
-                                    nCollision = n;
-                                    matCollision = currentEntity.model.materials[GetMaterialIndex(currentEntity.model, baseVertex)];
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if(t == FLT_MAX)
+                collision = CollisionRoutine(scene, ro, rd);
+                if(collision.t == FLT_MAX)
                     break;
                 
-                ro = pCollision;
-                vec3 reflection = (dot(-rd, nCollision) * 2.0f * nCollision) + rd;
-                rd = GenRandomRay(nCollision);
+                //rendering function
+                vec3 outgoingRadiance = vec3(0.0f, 0.0f, 0.0f);
+                u32 emitterCount = 0;
 
-                final_color *= matCollision.diffuse;
+                for(u32 entityIndex = 0; entityIndex < (u32)scene->entities.size; entityIndex++) {
+                    if(scene->entities[entityIndex].isEmitter) {
+                        Entity *emitter = &scene->entities[entityIndex];
+                        
+                        vec3 BRDF = collision.entityMat.diffuse / (f32)PI;
+                        vec3 rayToEmitterCenter = normalize(emitter->offset - collision.p);
+                        f32 cos_theta = max(0.0f, dot(collision.n, rayToEmitterCenter));
+
+                        f32 distToEmitter = dist(emitter->offset, collision.p);
+                        f32 attenuation = 1.0f / max(1.0f, (distToEmitter * distToEmitter));
+                        vec3 incomingRadiance = emitter->emission.flux * emitter->emission.color * attenuation;
+                        /*
+                        if(entityIndex != collision.entityIndex) {
+                            u32 nSamples = 5;
+                            f32 percentUnoccluded = ApproximateUnoccludedArea(scene, entityIndex, collision.p, nSamples);
+                            incomingRadiance *= percentUnoccluded;
+                        }
+                        */
+                        vec3 emittedRadiance = vec3(0.0f, 0.0f, 0.0f);
+                        if(scene->entities[collision.entityIndex].isEmitter) {
+                            emittedRadiance = scene->entities[collision.entityIndex].emission.flux * scene->entities[collision.entityIndex].emission.color;
+                        }
+                        outgoingRadiance += (emittedRadiance + (BRDF * incomingRadiance * cos_theta));
+                        emitterCount++;
+                    }
+                }
+                outgoingRadiance /= (f32)emitterCount;
+                finalColor *= outgoingRadiance;
+                
+                vec3 reflection = (dot(-rd, collision.n) * 2.0f * collision.n) + rd;
+                
+                rd = UniformSampleHemisphere(collision.n);
+                ro = collision.p;                
 
                 bounce++;
             }
 
-            final_color = vec3((f32)pow((double)final_color.x, (double)(1.0/2.2)), //gamma correction
-                               (f32)pow((double)final_color.y, (double)(1.0/2.2)),
-                               (f32)pow((double)final_color.z, (double)(1.0/2.2)));
-            u32 color = get_u32_color(final_color * scene->skyColor);
+            finalColor /= 1.0f + magnitude(finalColor);     
+            finalColor = vec3((f32)pow((double)finalColor.x, (double)(1.0/2.2)), //gamma correction
+                              (f32)pow((double)finalColor.y, (double)(1.0/2.2)),
+                              (f32)pow((double)finalColor.z, (double)(1.0/2.2)));
+//            finalColor = vec3((f32)sqrt(finalColor.x), (f32)sqrt(finalColor.y), (f32)sqrt(finalColor.z));
+            
+            u32 color = get_u32_color(finalColor * scene->skyColor);
             u32 filmIndex = (y * camera->film.pixelWidth) + x;     
             ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 0] += (color >> 0) & 0xFF;
             ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 1] += (color >> 8) & 0xFF;
