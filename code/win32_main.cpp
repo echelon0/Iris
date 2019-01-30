@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "iris.h"
+#include <thread>
 
 static bool g_IsRunning = false;
 static u32 g_iTime = 0;
@@ -155,7 +156,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
             Camera camera = {};
             Scene scene = {};
             InitCamera(&camera, windowWidth, windowHeight);
-            DemoScene1(&camera, &scene);
+            DemoScene3(&camera, &scene);
             //----------------------------------------------
 
             while(g_IsRunning) {
@@ -165,7 +166,9 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 //------------------- Iris -------------------
                 ProcessInput(&camera);
                 if(camera.sampleCount < 1000) {
-                    Draw( &camera, &scene);
+                    Draw(&camera, &scene);
+//                    std::thread t = std::thread(Draw, &camera, &scene);
+//                    t.detach();
                 }
                 //--------------------------------------------
                 

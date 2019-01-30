@@ -128,9 +128,8 @@ CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
                 } break;
 
                 case PLANE: {
-                    f32 t_temp = dot((currentEntity.shape.pPlane - ro), currentEntity.shape.nPlane) /
-                        dot(rd, currentEntity.shape.nPlane);
-                    if((t_temp > epsilon) && (t_temp < result.t) && (dot(currentEntity.shape.nPlane, -rd) > 0.0f)) {
+                    f32 t_temp = dot(currentEntity.shape.pPlane - ro, currentEntity.shape.nPlane) / dot(rd, currentEntity.shape.nPlane);
+                    if((t_temp > epsilon) && (t_temp < result.t)) {
                         result.t = t_temp;
                         result.p = ro + result.t*rd;
                         result.n = currentEntity.shape.nPlane;
@@ -168,32 +167,6 @@ CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
     return result;
 }
 
-f32
-ApproximateUnoccludedArea(Scene *scene, u32 objectIndex, vec3 p, u32 nSamples) {
-    if(nSamples == 0) 
-        return 0;
-    
-    Entity object = scene->entities[objectIndex];
-    f32 dist = magnitude(object.offset - p);
-    vec3 rayToObject = normalize(object.offset - p);    
-    f32 coneAngle = (f32)atan(object.shape.radius / dist);
-
-    CollisionInfo collision = {};
-    u32 numberOfHits = 0;
-    
-    for(u32 sampleIndex = 0; sampleIndex < nSamples; sampleIndex++) {
-        vec3 samplePoint = CosineWeightedSampleHemisphere(-rayToObject);
-        samplePoint += scene->entities[objectIndex].offset;
-        vec3 sampleRay = normalize(samplePoint - p);
-        collision = CollisionRoutine(scene, p, sampleRay);
-        if((collision.t != FLT_MAX) && (collision.entityIndex == objectIndex))
-            numberOfHits++;
-    }
-    
-    return (f32)numberOfHits / (f32)nSamples;
-}
-
-
 vec3
 TracePath(Scene *scene, vec3 ro, vec3 rd, u32 pathDepth) {
     CollisionInfo collision = {};
@@ -209,50 +182,19 @@ TracePath(Scene *scene, vec3 ro, vec3 rd, u32 pathDepth) {
     if(pathDepth == 0)
         return vec3(0.0f, 0.0f, 0.0f);
                 
-    //rendering function
-    u32 emitterCount = 0;
-    /*
-    vec3 directLight = vec3(0.0f, 0.0f, 0.0f);
-    for(u32 entityIndex = 0; entityIndex < (u32)scene->entities.size; entityIndex++) {
-        if(scene->entities[entityIndex].isEmitter) {
-            Entity *emitter = &scene->entities[entityIndex];
-                        
-            vec3 BRDF = collision.entityMat.diffuse / (f32)PI;
-            vec3 rayToEmitterCenter = normalize(emitter->offset - collision.p);
-            f32 cos_theta = max(0.0f, dot(collision.n, rayToEmitterCenter));
-
-            f32 distToEmitter = dist(emitter->offset, collision.p);
-            f32 attenuation = 1.0f / max(1.0f, (distToEmitter * distToEmitter));
-            vec3 incomingRadiance = emitter->emission.flux * emitter->emission.color * attenuation;
-
-            if(entityIndex != collision.entityIndex) {
-                u32 nSamples = 0;
-                f32 percentUnoccluded = ApproximateUnoccludedArea(scene, entityIndex, collision.p, nSamples);
-                directLight *= percentUnoccluded;
-            }
-    
-            vec3 emittedRadiance = vec3(0.0f, 0.0f, 0.0f);
-            if(scene->entities[collision.entityIndex].isEmitter) {
-                emittedRadiance = scene->entities[collision.entityIndex].emission.flux * scene->entities[collision.entityIndex].emission.color;
-            }
-            directLight += (emittedRadiance + (BRDF * incomingRadiance * cos_theta));
-            emitterCount++;
-        }
-    }
-    directLight /= (f32)emitterCount;
-    */
     vec3 BRDF = collision.entityMat.diffuse / (f32)PI;
     f32 cosTheta = max(0.0f, dot(collision.n, -rd));
     
     ro = collision.p;
     rd = UniformSampleHemisphere(collision.n);
-
-    return BRDF * TracePath(scene, ro, rd, pathDepth - 1) * cosTheta;
+    
+    vec3 OutgoingRadiance = BRDF * TracePath(scene, ro, rd, pathDepth - 1) * cosTheta;
+    return OutgoingRadiance;
 }
 
 void
 Draw(Camera *camera, Scene *scene) {
-    int pathDepth = 16;
+    int pathDepth = 4;
     
     if(camera->updated || scene->updated) {
         memset(camera->film.sumBuffer, (u8)0, camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4);
@@ -270,12 +212,17 @@ Draw(Camera *camera, Scene *scene) {
             vec3 rd = normalize(pFilm - camera->pos);
 
             vec3 finalColor = TracePath(scene, ro, rd, pathDepth);
-
-            finalColor /= 1.0f + magnitude(finalColor);     
+//            for(int i = 0; i < 5; i++) {
+//                if(magnitude(finalColor) > 0)
+//                    break;
+//                finalColor = TracePath(scene, ro, rd, pathDepth);
+//            }
+            
+            finalColor /= 1.0f + magnitude(finalColor);
             finalColor = vec3((f32)pow((double)finalColor.x, (double)(1.0/2.2)), //gamma correction
                               (f32)pow((double)finalColor.y, (double)(1.0/2.2)),
                               (f32)pow((double)finalColor.z, (double)(1.0/2.2)));
-//            finalColor = vec3((f32)sqrt(finalColor.x), (f32)sqrt(finalColor.y), (f32)sqrt(finalColor.z));
+            //finalColor = vec3((f32)sqrt(finalColor.x), (f32)sqrt(finalColor.y), (f32)sqrt(finalColor.z));
             
             u32 color = get_u32_color(finalColor * scene->skyColor);
             u32 filmIndex = (y * camera->film.pixelWidth) + x;     
