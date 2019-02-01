@@ -5,7 +5,7 @@
 #define u32 unsigned int
 #define f32 float
 
-#include <windows.h>
+#include <Windows.h>
 #include <stdio.h>
 #include "iris.h"
 #include <thread>
@@ -30,8 +30,8 @@ LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
         } break;
 
         case WM_SIZE: {
-            WORD windowWidth = LOWORD(lParam);
-            WORD windowHeight = HIWORD(lParam);
+            WORD WindowWidth = LOWORD(lParam);
+            WORD WindowHeight = HIWORD(lParam);
         } break;
 
         case WM_KEYDOWN: {
@@ -73,12 +73,12 @@ LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
 }
 
 ivec2
-CalcWindowPos(int windowWidth, int windowHeight) {
+CalcWindowPos(int WindowWidth, int WindowHeight) {
     ivec2 pos;
     int screen_width = GetSystemMetrics(SM_CXSCREEN);
     int screen_height = GetSystemMetrics(SM_CYSCREEN);
-    pos.y = (screen_height - windowHeight) / 2;
-    pos.x = (screen_width - windowWidth) / 2;
+    pos.y = (screen_height - WindowHeight) / 2;
+    pos.x = (screen_width - WindowWidth) / 2;
     return pos;
 }
 
@@ -97,103 +97,103 @@ GetElapsedTime(LARGE_INTEGER beginCount) {
 }
 
 void
-ProcessInput(Camera *camera) {
+ProcessInput(camera *Camera) {
 
     //camera control
     f32 speed = 0.5f;
     vec3 velocity = vec3(0.0f, 0.0f, 0.0f);
     if(g_inputState.W_KEY) {
-        velocity += (camera->dir * speed);
+        velocity += (Camera->Dir * speed);
     }
     if(g_inputState.A_KEY) {
-        velocity += (-camera->right * speed);
+        velocity += (-Camera->Right * speed);
     }
     if(g_inputState.S_KEY) {
-        velocity += (-camera->dir * speed);
+        velocity += (-Camera->Dir * speed);
     }
     if(g_inputState.D_KEY) {
-        velocity += (camera->right * speed);  
+        velocity += (Camera->Right * speed);  
     }
     f32 disp = magnitude(velocity);
     if(disp > 0.0001f) {
-        camera->updated = true;
+        Camera->Updated = true;
         if(disp > 1.0f) 
             velocity = velocity * (disp / (f32)sqrt(2.0f));
-        camera->pos += velocity;
+        Camera->Pos += velocity;
     }
 }
 
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    int windowWidth = 960;
-    int windowHeight = 580;
-    f32 aspect = (f32)windowWidth / (f32)windowHeight;
-    ivec2 window_pos = CalcWindowPos(windowWidth, windowHeight);
+    int WindowWidth = 960;
+    int WindowHeight = 580;
+    f32 Aspect = (f32)WindowWidth / (f32)WindowHeight;
+    ivec2 WindowPos = CalcWindowPos(WindowWidth, WindowHeight);
     
-    WNDCLASS window_class = {};
-    window_class.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
-    window_class.lpfnWndProc = CallWindowProc;
-    window_class.hCursor = LoadCursor(0, IDC_ARROW);
-    window_class.hInstance = hInstance;
-    window_class.lpszClassName = "Iris";   
+    WNDCLASS WindowClass = {};
+    WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
+    WindowClass.lpfnWndProc = CallWindowProc;
+    WindowClass.hCursor = LoadCursor(0, IDC_ARROW);
+    WindowClass.hInstance = hInstance;
+    WindowClass.lpszClassName = "Iris";   
 
-    if(RegisterClass(&window_class)) {
-        HWND window = CreateWindow(
-            window_class.lpszClassName,
+    if(RegisterClass(&WindowClass)) {
+        HWND Window = CreateWindow(
+            WindowClass.lpszClassName,
             "Iris",
             WS_VISIBLE|WS_OVERLAPPEDWINDOW,
-            window_pos.x, window_pos.y,
-            windowWidth, windowHeight,
+            WindowPos.x, WindowPos.y,
+            WindowWidth, WindowHeight,
             0, 0,
             hInstance, 0);
 
-        if(window) {
+        if(Window) {
             f32 FRAME_RATE = 60.0f;
             f32 FRAME_FREQUENCY = (1000.0f / FRAME_RATE);
             g_IsRunning = true;
 
             //----------------- Iris --------------------
-            Camera camera = {};
-            Scene scene = {};
-            InitCamera(&camera, windowWidth, windowHeight);
-            DemoScene3(&camera, &scene);
+            camera Camera = {};
+            scene Scene = {};
+            InitCamera(&Camera, WindowWidth, WindowHeight);
+            DemoScene4(&Camera, &Scene);
             //----------------------------------------------
 
             while(g_IsRunning) {
-                LARGE_INTEGER beginCount;
-                QueryPerformanceCounter(&beginCount);
+                LARGE_INTEGER BeginCount;
+                QueryPerformanceCounter(&BeginCount);
 
                 //------------------- Iris -------------------
-                ProcessInput(&camera);
-                if(camera.sampleCount < 1000) {
-                    Draw(&camera, &scene);
-//                    std::thread t = std::thread(Draw, &camera, &scene);
-//                    t.detach();
+                ProcessInput(&Camera);
+                u32 PathDepth = 4;
+                u32 nDirectSamples = 2;
+                if(Camera.SampleCount < 1000) {
+                    Draw(&Camera, &Scene, PathDepth, nDirectSamples);
                 }
                 //--------------------------------------------
                 
-                HDC deviceContext = GetWindowDC(window);
-                RenderBuffer(deviceContext, camera.film.buffer,
-                             windowWidth, windowHeight,
-                             camera.film.pixelWidth, camera.film.pixelHeight);
-                ReleaseDC(window, deviceContext);
+                HDC DeviceContext = GetWindowDC(Window);
+                RenderBuffer(DeviceContext, Camera.Film.Buffer,
+                             WindowWidth, WindowHeight,
+                             Camera.Film.PixelWidth, Camera.Film.PixelHeight);
+                ReleaseDC(Window, DeviceContext);
                 
                 
                 MSG message;
-                while(PeekMessage(&message, window, 0, 0, PM_REMOVE)) {
+                while(PeekMessage(&message, Window, 0, 0, PM_REMOVE)) {
                     TranslateMessage(&message);
                     DispatchMessage(&message);
                 }
                 
-                f32 frameDuration = GetElapsedTime(beginCount);
-                f32 waitTime = FRAME_FREQUENCY - frameDuration;
-                if(waitTime > 0.0f) {
-                    Sleep((DWORD)waitTime);
+                f32 FrameDuration = GetElapsedTime(BeginCount);
+                f32 WaitTime = FRAME_FREQUENCY - FrameDuration;
+                if(WaitTime > 0.0f) {
+                    Sleep((DWORD)WaitTime);
                 }
 
-                char windowText[256];
-                sprintf(windowText, "Iris -- fps:%.2f, samples: %d", 1000.0f / (frameDuration + ((waitTime > 0)? waitTime : 0)), camera.sampleCount);
-                SetWindowTextA(window, windowText);
+                char WindowText[256];
+                sprintf(WindowText, "Iris -- fps:%.2f, Samples: %d", 1000.0f / (FrameDuration + ((WaitTime > 0)? WaitTime : 0)), Camera.SampleCount);
+                SetWindowTextA(Window, WindowText);
                 g_iTime++;
             }
         }

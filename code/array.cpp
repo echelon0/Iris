@@ -1,35 +1,35 @@
 
 template <typename T>
-struct Array {
-    T *data;
-    int size;
-    int capacity;
+struct array {
+    T *Data;
+    int Size;
+    int Capacity;
 
-    Array() {
-        size = 0;
-        capacity = 1;
-        data = (T *)calloc(capacity, sizeof(T));
+    array() {
+        Size = 0;
+        Capacity = 1;
+        Data = (T *)calloc(Capacity, sizeof(T));
     }
     
-    T &operator[](int i) {
-        return data[i];
+    T &operator[](int I) {
+        return Data[I];
     }
 
-    const T &operator[](int i) const {
-        return data[i];
+    const T &operator[](int I) const {
+        return Data[I];
     }    
     
-    void PushBack(T entry) {
-        if(size >= capacity) {
-            data = (T *)realloc(data, sizeof(T) * capacity * 2);
-            capacity *= 2;
+    void PushBack(T Entry) {
+        if(Size >= Capacity) {
+            Data = (T *)realloc(Data, sizeof(T) * Capacity * 2);
+            Capacity *= 2;
         }
-        data[size++] = entry;
+        Data[Size++] = Entry;
     }
 
-    bool Contains(T entry) {
-        for(int i = 0; i < size; i++) {
-            if(data[i] == entry) {
+    bool Contains(T Entry) {
+        for(int i = 0; i < Size; i++) {
+            if(Data[i] == Entry) {
                 return true;
             }
         }

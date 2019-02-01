@@ -9,88 +9,89 @@ int ScanWord(char *str, char *substr) { //returns chars read
     return count;
 }
 
-Model LoadObj(char *fileName) {
-    Model loadedModel = {};
+model
+LoadObj(char *FileName) {
+    model LoadedModel = {};
     
-    char folderPath[] = "../models/";
-    int folderPathLength = StrLen(folderPath);
+    char FolderPath[] = "../models/";
+    int FolderPathLength = StrLen(FolderPath);
     
-    char *filePath = (char *)malloc((folderPathLength + StrLen(fileName) + 1) * sizeof(char));
-    StrCopy(filePath, folderPath);
-    StrCat(filePath, fileName);
+    char *FilePath = (char *)malloc((FolderPathLength + StrLen(FileName) + 1) * sizeof(char));
+    StrCopy(FilePath, FolderPath);
+    StrCat(FilePath, FileName);
         
-    FILE *objFileHandle = fopen(filePath, "r");
+    FILE *objFileHandle = fopen(FilePath, "r");
     if(!objFileHandle) {
         char *msg = (char *)calloc(StrLen("Cannot open .obj file: "), sizeof(char));
         StrCat(msg, "Cannot open .obj file: ");
-        StrCat(msg, fileName);
+        StrCat(msg, FileName);
         LOG_ERROR("ERROR", msg);
-        return loadedModel;
+        return LoadedModel;
     }
 
     //mtl file path
-    int filePathLength = StrLen(filePath) - 4;
+    int FilePathLength = StrLen(FilePath) - 4;
     char mtlFileExtension[] = ".mtl";
-    for(int i = filePathLength, j = 0; i < filePathLength + 4, j < 4; i++, j++) {
-        filePath[i] = mtlFileExtension[j];
+    for(int i = FilePathLength, j = 0; i < FilePathLength + 4, j < 4; i++, j++) {
+        FilePath[i] = mtlFileExtension[j];
     }
 
-    FILE *mtlFileHandle = fopen(filePath, "r");
+    FILE *mtlFileHandle = fopen(FilePath, "r");
     if(!mtlFileHandle) {
-        char errorMsg[] = "Material file not found for ";
-        char *fullErrorMsg = (char *)malloc((StrLen(errorMsg) + StrLen(fileName) + 1) * sizeof(char));
+        char errorMsg[] = "material file not found for ";
+        char *fullErrorMsg = (char *)malloc((StrLen(errorMsg) + StrLen(FileName) + 1) * sizeof(char));
         StrCopy(fullErrorMsg, errorMsg);
-        StrCat(fullErrorMsg, fileName);
+        StrCat(fullErrorMsg, FileName);
         LOG_ERROR("Message", fullErrorMsg);
         delete fullErrorMsg;
-        return loadedModel;
+        return LoadedModel;
     }
 
     char lineID[2048];
     struct MaterialWithID {
         char name[1024];
         bool recorded;
-        Material mat;
+        material Mat;
     };
-    Array<MaterialWithID> materials;
+    array<MaterialWithID> Materials;
     while(fscanf(mtlFileHandle, "%s", lineID) != EOF) {
         if(strcmp(lineID, "newmtl") == 0) {
-            MaterialWithID mat = {};
-            fscanf(mtlFileHandle, "%s", mat.name);
-            materials.PushBack(mat);
+            MaterialWithID Mat = {};
+            fscanf(mtlFileHandle, "%s", Mat.name);
+            Materials.PushBack(Mat);
                         
-        } else if(strcmp(lineID, "Kd") == 0) { //diffuse
+        } else if(strcmp(lineID, "Kd") == 0) { //Diffuse
             fscanf(mtlFileHandle, "%f%f%f\n",
-                   &materials[materials.size - 1].mat.diffuse.x,
-                   &materials[materials.size - 1].mat.diffuse.y,
-                   &materials[materials.size - 1].mat.diffuse.z);
+                   &Materials[Materials.Size - 1].Mat.Diffuse.x,
+                   &Materials[Materials.Size - 1].Mat.Diffuse.y,
+                   &Materials[Materials.Size - 1].Mat.Diffuse.z);
             
-        } else if(strcmp(lineID, "Ks") == 0) { //specular
+        } else if(strcmp(lineID, "Ks") == 0) { //Specular
             fscanf(mtlFileHandle, "%f%f%f\n",
-                   &materials[materials.size - 1].mat.specular.x,
-                   &materials[materials.size - 1].mat.specular.y,
-                   &materials[materials.size - 1].mat.specular.z);
+                   &Materials[Materials.Size - 1].Mat.Specular.x,
+                   &Materials[Materials.Size - 1].Mat.Specular.y,
+                   &Materials[Materials.Size - 1].Mat.Specular.z);
 
-        } else if(strcmp(lineID, "Ns") == 0) { //specular exponent
-            fscanf(mtlFileHandle, "%f", &materials[materials.size - 1].mat.exponent);
+        } else if(strcmp(lineID, "Ns") == 0) { //Specular Exponent
+            fscanf(mtlFileHandle, "%f", &Materials[Materials.Size - 1].Mat.Exponent);
 
         } else if(strcmp(lineID, "d") == 0) { //dissolve
-            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.transparency);
-            materials[materials.size - 1].mat.transparency = 1.0f - materials[materials.size - 1].mat.transparency;
+            fscanf(mtlFileHandle, "%f\n", &Materials[Materials.Size - 1].Mat.Transparency);
+            Materials[Materials.Size - 1].Mat.Transparency = 1.0f - Materials[Materials.Size - 1].Mat.Transparency;
             
         } else if(strcmp(lineID, "Tr") == 0) {
-            fscanf(mtlFileHandle, "%f\n", &materials[materials.size - 1].mat.transparency);
+            fscanf(mtlFileHandle, "%f\n", &Materials[Materials.Size - 1].Mat.Transparency);
             
         }
     }
     
-    Array<vec3> positions;
-    Array<vec3> normals;
-    Array<vec2> texcoords;
+    array<vec3> Positions;
+    array<vec3> Normals;
+    array<vec2> TexCoords;
     
     vec3 position;
-    vec3 normal;
-    vec2 texcoord;
+    vec3 Normal;
+    vec2 TexCoord;
 
     bool has_v = false;
     bool has_vt = false;
@@ -98,26 +99,26 @@ Model LoadObj(char *fileName) {
 
     int currentMatIndex = -1;
     while(fscanf(objFileHandle, "%s", lineID) != EOF) {
-        if(strcmp(lineID, "v") == 0) { //vertex position
+        if(strcmp(lineID, "v") == 0) { //Vertex position
             fscanf(objFileHandle, "%f%f%f\n", &position.x, &position.y, &position.z);
-            positions.PushBack(position);
+            Positions.PushBack(position);
             has_v = true;
 
-        } else if(strcmp(lineID, "vt") == 0) { //texcoord
-            fscanf(objFileHandle, "%f%f\n", &texcoord.x, &texcoord.y);
-            texcoords.PushBack(texcoord);
+        } else if(strcmp(lineID, "vt") == 0) { //TexCoord
+            fscanf(objFileHandle, "%f%f\n", &TexCoord.x, &TexCoord.y);
+            TexCoords.PushBack(TexCoord);
             has_vt = true;
             
-        } else if(strcmp(lineID, "vn") == 0) { //normal
-            fscanf(objFileHandle, "%f%f%f\n", &normal.x, &normal.y, &normal.z);
-            normals.PushBack(normal);
+        } else if(strcmp(lineID, "vn") == 0) { //Normal
+            fscanf(objFileHandle, "%f%f%f\n", &Normal.x, &Normal.y, &Normal.z);
+            Normals.PushBack(Normal);
             has_vn = true;
 
         } else if(strcmp(lineID, "usemtl") == 0) {
-            char matName[1024];
-            fscanf(objFileHandle, "%s", matName);
-            for(int i = 0; i < materials.size; i++) {
-                if(strcmp(materials[i].name, matName) == 0) {
+            char MatName[1024];
+            fscanf(objFileHandle, "%s", MatName);
+            for(int i = 0; i < Materials.Size; i++) {
+                if(strcmp(Materials[i].name, MatName) == 0) {
                     currentMatIndex = i;
                 }
             }
@@ -139,55 +140,55 @@ Model LoadObj(char *fileName) {
                 LOG_ERROR("ERROR", "Cannot open .obj");
             }
             
-            VertexAttribute tempVertices[3];
-            tempVertices[0].position = positions[v1-1];
-            tempVertices[0].texcoord = texcoords[vt1-1];
-            tempVertices[1].position = positions[v2-1];
-            tempVertices[1].texcoord = texcoords[vt2-1];
-            tempVertices[2].position = positions[v3-1];
-            tempVertices[2].texcoord = texcoords[vt3-1];
+            vertex_attribute TempVertices[3];
+            TempVertices[0].Position = Positions[v1-1];
+            TempVertices[0].TexCoord = TexCoords[vt1-1];
+            TempVertices[1].Position = Positions[v2-1];
+            TempVertices[1].TexCoord = TexCoords[vt2-1];
+            TempVertices[2].Position = Positions[v3-1];
+            TempVertices[2].TexCoord = TexCoords[vt3-1];
 
-            tempVertices[0].normal = cross(tempVertices[2].position - tempVertices[0].position, //left-handed normal
-                                            tempVertices[1].position - tempVertices[0].position);
-            tempVertices[1].normal = tempVertices[0].normal;
-            tempVertices[2].normal = tempVertices[0].normal;
+            TempVertices[0].Normal = normalize(cross(normalize(TempVertices[0].Position - TempVertices[1].Position), //left-handed Normal
+                                                     normalize(TempVertices[2].Position - TempVertices[1].Position)));
+            TempVertices[1].Normal = TempVertices[0].Normal;
+            TempVertices[2].Normal = TempVertices[0].Normal;
             for(int i = 0; i < 3; i++) {
-                if(!materials[currentMatIndex].recorded) {
-                    Material finalMat = {};
-                    finalMat.diffuse = materials[currentMatIndex].mat.diffuse;
-                    finalMat.specular = materials[currentMatIndex].mat.specular;
-                    finalMat.exponent = materials[currentMatIndex].mat.exponent;
-                    finalMat.transparency = materials[currentMatIndex].mat.transparency;
+                if(!Materials[currentMatIndex].recorded) {
+                    material finalMat = {};
+                    finalMat.Diffuse = Materials[currentMatIndex].Mat.Diffuse;
+                    finalMat.Specular = Materials[currentMatIndex].Mat.Specular;
+                    finalMat.Exponent = Materials[currentMatIndex].Mat.Exponent;
+                    finalMat.Transparency = Materials[currentMatIndex].Mat.Transparency;
                     
-                    loadedModel.materials.PushBack(finalMat);
-                    loadedModel.materialBases.PushBack(loadedModel.vertexAttributes.size);
-                    if(loadedModel.materials.size >= 2) {
-                        int prevMatSize = loadedModel.materialBases[loadedModel.materialBases.size - 1] - loadedModel.materialBases[loadedModel.materialBases.size - 2];
-                        loadedModel.materialSizes.PushBack(prevMatSize);
+                    LoadedModel.Materials.PushBack(finalMat);
+                    LoadedModel.MaterialBases.PushBack(LoadedModel.VertexAttributes.Size);
+                    if(LoadedModel.Materials.Size >= 2) {
+                        int PrevMatSize = LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 1] - LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 2];
+                        LoadedModel.MaterialSizes.PushBack(PrevMatSize);
                     }
-                    materials[currentMatIndex].recorded = true;
+                    Materials[currentMatIndex].recorded = true;
                 }
-                loadedModel.vertexAttributes.PushBack(tempVertices[i]);
+                LoadedModel.VertexAttributes.PushBack(TempVertices[i]);
             }
         }
     }
     
-    if(loadedModel.materials.size >= 2) {
-        int prevMatSize = loadedModel.vertexAttributes.size - loadedModel.materialBases[loadedModel.materialBases.size - 2];
-        loadedModel.materialSizes.PushBack(prevMatSize);
-    } else if(loadedModel.materials.size == 1) {
-        loadedModel.materialSizes.PushBack(loadedModel.vertexAttributes.size);
+    if(LoadedModel.Materials.Size >= 2) {
+        int PrevMatSize = LoadedModel.VertexAttributes.Size - LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 2];
+        LoadedModel.MaterialSizes.PushBack(PrevMatSize);
+    } else if(LoadedModel.Materials.Size == 1) {
+        LoadedModel.MaterialSizes.PushBack(LoadedModel.VertexAttributes.Size);
     }
 
-    StrCopy(loadedModel.strName, fileName);
+    StrCopy(LoadedModel.StrName, FileName);
     
-    delete filePath;
-    delete positions.data;
-    delete normals.data;
-    delete texcoords.data;
+    delete FilePath;
+    delete Positions.Data;
+    delete Normals.Data;
+    delete TexCoords.Data;
 
     fclose(objFileHandle);
     fclose(mtlFileHandle);
     
-    return loadedModel;
+    return LoadedModel;
 }

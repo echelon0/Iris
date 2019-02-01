@@ -1,91 +1,81 @@
 
-struct Film {
-    void *buffer;
-    void *sumBuffer;    
-    int pixelWidth;
-    int pixelHeight;
-    vec2 worldSize;
-    f32 dist;
+struct film {
+    void *Buffer;
+    void *SumBuffer;    
+    int PixelWidth;
+    int PixelHeight;
+    vec2 WorldSize;
+    f32 Dist;
 };
 
-struct Camera {
-    vec3 pos;
-    vec3 dir;
-    vec3 up;
-    vec3 right;
+struct camera {
+    vec3 Pos;
+    vec3 Dir;
+    vec3 Up;
+    vec3 Right;
 
-    Film film;
-    u32 sampleCount;
-    bool updated;
+    film Film;
+    u32 SampleCount;
+    bool Updated;
 };
 
-struct VertexAttribute {
-    vec3 position;
-    vec3 normal;
-    vec2 texcoord;
+struct vertex_attribute {
+    vec3 Position;
+    vec3 Normal;
+    vec2 TexCoord;
 };
 
-struct Material {
-    vec3 diffuse;
-    vec3 specular;
-    f32 exponent;
-    f32 transparency;
-    f32 refractionN;
+struct material {
+    vec3 Diffuse;
+    vec3 Specular;
+    f32 Exponent;
+    f32 Transparency;
+    f32 RefractionN;
 };
 
-struct Model {
-    char strName[128];
-    Array<VertexAttribute> vertexAttributes;
-    Array<Material> materials;
-    Array<int> materialBases;
-    Array<int> materialSizes;
+struct model {
+    char StrName[128];
+    array<vertex_attribute> VertexAttributes;
+    array<material> Materials;
+    array<int> MaterialBases;
+    array<int> MaterialSizes;
 };
 
-enum Shape { SPHERE, PLANE };
-struct Primitive {
-    Shape type;
-    Material material;
-    f32 radius;
+enum shape { SPHERE, PLANE };
+struct primitive {
+    shape Type;
+    material Material;
+    f32 Radius;
     vec3 nPlane;
     vec3 pPlane;
 };
 
-struct EmissionProfile {
-    f32 flux;
-    vec3 color;
+struct emission_profile {
+    f32 Flux;
+    vec3 Color;
 };
 
-struct Entity {
-    bool isShape;
-    bool isEmitter;
-    EmissionProfile emission;
+struct entity {
+    bool IsShape;
+    bool IsEmitter;
+    emission_profile Emission;
     union {
-        Model model;
-        Primitive shape;
+        model Model;
+        primitive Shape;
     };
-    vec3 offset;
+    vec3 Offset;
 };
 
-struct Scene {
-    Array<Entity> entities;
-    vec3 skyColor;
-    bool updated;
+struct scene {
+    array<entity> Entities;
+    bool Updated;
 };
 
-struct CollisionInfo {
+struct collision_info {
     vec3 p;
     vec3 n;
-    Material entityMat = {};
-    u32 entityIndex;
+    material EntityMat = {};
+    u32 EntityIndex;
     f32 t;
 };
 
-int GetMaterialIndex(Model model, int vertexIndex);
-void InitCamera(Camera *camera, u32 windowWidth, u32 windowHeight);
-void RenderBuffer(HDC deviceContext, void *buffer,
-                  int windowWidth, int windowHeight,
-                  int bufferWidth, int bufferHeight);
-inline u32 get_u32_color(vec3 vec);
-inline vec3 rgb(u32 r, u32 g, u32 b);
-inline vec3 GenRandomRay(vec3 n, vec3 reflection, f32 rCoefficient);
-void Draw(Camera *camera, Scene *scene);

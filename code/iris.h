@@ -11,6 +11,6 @@
 #include "math.h"
 #include "renderer.cpp"
 #include "file_loader.cpp"
-#include "sample_scenes.h"
+#include "demo_scenes.h"
 
 

@@ -1,36 +1,36 @@
 
 #include "renderer.h"
 
+void
+InitCamera(camera *Camera, u32 WindowWidth, u32 WindowHeight) {
+    Camera->Pos = vec3(0.0f, 0.0f, 0.0f);
+    Camera->Dir = vec3(0.0f, 0.0f, 1.0f);
+    Camera->Up = vec3(0.0f, 1.0f, 0.0f);
+    Camera->Right = vec3(1.0f, 0.0f, 0.0f);
+            
+    Camera->Film.PixelWidth = WindowWidth;
+    Camera->Film.PixelHeight = WindowHeight;
+    Camera->Film.Buffer = (void *)malloc(Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32));
+    Camera->Film.SumBuffer = (void *)calloc(Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4, 1);
+    f32 aspect = (f32)WindowWidth / (f32)WindowHeight;
+    Camera->Film.WorldSize = vec2(aspect, 1.0f);
+    Camera->Film.Dist = 1.0f;
+}
+
 int
-GetMaterialIndex(Model model, int vertexIndex) {
-    for(int baseIndex = 0; baseIndex < model.materialBases.size; baseIndex++) {
-        if(vertexIndex >= model.materialBases[baseIndex] &&
-           (vertexIndex < model.materialBases[baseIndex]+ model.materialSizes[baseIndex])) {
-            return baseIndex;
+GetMaterialIndex(model Model, int VertexIndex) {
+    for(int BaseIndex = 0; BaseIndex < Model.MaterialBases.Size; BaseIndex++) {
+        if(VertexIndex >= Model.MaterialBases[BaseIndex] &&
+           (VertexIndex < Model.MaterialBases[BaseIndex]+ Model.MaterialSizes[BaseIndex])) {
+            return BaseIndex;
         }
     };
     return -1;
 }
 
 void
-InitCamera(Camera *camera, u32 windowWidth, u32 windowHeight) {
-    camera->pos = vec3(0.0f, 0.0f, 0.0f);
-    camera->dir = vec3(0.0f, 0.0f, 1.0f);
-    camera->up = vec3(0.0f, 1.0f, 0.0f);
-    camera->right = vec3(1.0f, 0.0f, 0.0f);
-            
-    camera->film.pixelWidth = windowWidth;
-    camera->film.pixelHeight = windowHeight;
-    camera->film.buffer = (void *)malloc(camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32));
-    camera->film.sumBuffer = (void *)calloc(camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4, 1);
-    f32 aspect = (f32)windowWidth / (f32)windowHeight;
-    camera->film.worldSize = vec2(aspect, 1.0f);
-    camera->film.dist = 1.0f;
-}
-
-void
 RenderBuffer(HDC deviceContext, void *buffer,
-             int windowWidth, int windowHeight,
+             int WindowWidth, int WindowHeight,
              int bufferWidth, int bufferHeight) {
     
     BITMAPINFO bitmapInfo = {};
@@ -42,7 +42,7 @@ RenderBuffer(HDC deviceContext, void *buffer,
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
     
     StretchDIBits(deviceContext,
-                  0, 0, windowWidth, windowHeight,
+                  0, 0, WindowWidth, WindowHeight,
                   0, 0, bufferWidth, bufferHeight,
                   buffer,
                   &bitmapInfo,
@@ -51,7 +51,7 @@ RenderBuffer(HDC deviceContext, void *buffer,
 }
 
 inline u32
-get_u32_color(vec3 vec) {
+Get_u32Color(vec3 vec) {
     return (((u8)(vec.x * 255.0f) << 16) | ((u8)(vec.y * 255.0f) << 8) | ((u8)(vec.z * 255.0f) << 0));
 }
 
@@ -93,34 +93,34 @@ CosineWeightedSampleHemisphere(vec3 n) {
     return vec3(pDisk.x, pDisk.y, z);
 }
 
-CollisionInfo
-CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
-    CollisionInfo result;
+collision_info
+CollisionRoutine(scene *Scene, vec3 ro, vec3 rd) {
+    collision_info Result = {};
     
-    result.t = FLT_MAX;
+    Result.t = FLT_MAX;
 
-    f32 epsilon = 0.001f;
-    for(int entityIndex = 0; entityIndex < scene->entities.size; entityIndex++) {
-        Entity currentEntity = scene->entities[entityIndex];
-        if(currentEntity.isShape) { //--- Shape ---
-            switch(currentEntity.shape.type) {
+    f32 Epsilon = 0.001f;
+    for(int EntityIndex = 0; EntityIndex < Scene->Entities.Size; EntityIndex++) {
+        entity CurrentEntity = Scene->Entities[EntityIndex];
+        if(CurrentEntity.IsShape) { //--- Shape ---
+            switch(CurrentEntity.Shape.Type) {
                 case SPHERE: {
                     f32 a = dot(rd, rd);
-                    f32 b = 2.0f * dot(rd, ro - currentEntity.offset);
-                    f32 c = dot((ro - currentEntity.offset), (ro - currentEntity.offset)) - (currentEntity.shape.radius * currentEntity.shape.radius);
+                    f32 b = 2.0f * dot(rd, ro - CurrentEntity.Offset);
+                    f32 c = dot((ro - CurrentEntity.Offset), (ro - CurrentEntity.Offset)) - (CurrentEntity.Shape.Radius * CurrentEntity.Shape.Radius);
 
-                    f32 discriminant = b*b - 4.0f*a*c;
-                    if(discriminant >= 0) {
-                        f32 t1 = (-b - (f32)sqrt(discriminant)) / 2.0f * a;
-                        f32 t2 = (-b + (f32)sqrt(discriminant)) / 2.0f * a;
-                        if((t1 > epsilon) || (t2 > epsilon)) {
+                    f32 Discriminant = b*b - 4.0f*a*c;
+                    if(Discriminant >= 0) {
+                        f32 t1 = (-b - (f32)sqrt(Discriminant)) / 2.0f * a;
+                        f32 t2 = (-b + (f32)sqrt(Discriminant)) / 2.0f * a;
+                        if((t1 > Epsilon) || (t2 > Epsilon)) {
                             f32 t_temp = pos_min(t1, t2);
-                            if(t_temp < result.t) {
-                                result.t = t_temp;
-                                result.p = ro + result.t*rd;               
-                                result.n = normalize(result.p - currentEntity.offset);
-                                result.entityMat = currentEntity.shape.material;
-                                result.entityIndex = entityIndex;
+                            if(t_temp < Result.t) {
+                                Result.t = t_temp;
+                                Result.p = ro + Result.t*rd;               
+                                Result.n = normalize(Result.p - CurrentEntity.Offset);
+                                Result.EntityMat = CurrentEntity.Shape.Material;
+                                Result.EntityIndex = EntityIndex;
                             }
                         }
                     }
@@ -128,13 +128,13 @@ CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
                 } break;
 
                 case PLANE: {
-                    f32 t_temp = dot(currentEntity.shape.pPlane - ro, currentEntity.shape.nPlane) / dot(rd, currentEntity.shape.nPlane);
-                    if((t_temp > epsilon) && (t_temp < result.t)) {
-                        result.t = t_temp;
-                        result.p = ro + result.t*rd;
-                        result.n = currentEntity.shape.nPlane;
-                        result.entityMat = currentEntity.shape.material;
-                        result.entityIndex = entityIndex;                              
+                    f32 t_temp = dot(CurrentEntity.Shape.pPlane - ro, CurrentEntity.Shape.nPlane) / dot(rd, CurrentEntity.Shape.nPlane);
+                    if((t_temp > Epsilon) && (t_temp < Result.t)) {
+                        Result.t = t_temp;
+                        Result.p = ro + Result.t*rd;
+                        Result.n = CurrentEntity.Shape.nPlane;
+                        Result.EntityMat = CurrentEntity.Shape.Material;
+                        Result.EntityIndex = EntityIndex;                              
                     }                               
                                 
                 } break;
@@ -143,99 +143,156 @@ CollisionRoutine(Scene *scene, vec3 ro, vec3 rd) {
                 } break;
             }
         } else { //--- Model ---
-            for(int baseVertex = 0; baseVertex < currentEntity.model.vertexAttributes.size; baseVertex+=3) {
-                vec3 n = currentEntity.model.vertexAttributes[baseVertex].normal;                          
-                vec3 v0 = currentEntity.model.vertexAttributes[baseVertex + 0].position + currentEntity.offset;
-                vec3 v1 = currentEntity.model.vertexAttributes[baseVertex + 1].position + currentEntity.offset;
-                vec3 v2 = currentEntity.model.vertexAttributes[baseVertex + 2].position + currentEntity.offset;
+            for(int BaseVertex = 0; BaseVertex < CurrentEntity.Model.VertexAttributes.Size; BaseVertex += 3) {
+                vec3 n = CurrentEntity.Model.VertexAttributes[BaseVertex].Normal;                          
+                vec3 v0 = CurrentEntity.Model.VertexAttributes[BaseVertex + 0].Position + CurrentEntity.Offset;
+                vec3 v1 = CurrentEntity.Model.VertexAttributes[BaseVertex + 1].Position + CurrentEntity.Offset;
+                vec3 v2 = CurrentEntity.Model.VertexAttributes[BaseVertex + 2].Position + CurrentEntity.Offset;
 
-                vec3 intersection;                      
                 f32 t_temp;
                 if(ray_intersects_triangle(ro, rd, v0, v1, v2, n, t_temp)) {
-                    if((t_temp > epsilon) && (t_temp < result.t) && (dot(n, rd) > 0.0f)) {
-                        result.t = t_temp;
-                        result.p = intersection;
-                        result.n = n;
-                        result.entityMat = currentEntity.model.materials[GetMaterialIndex(currentEntity.model, baseVertex)];
-                        result.entityIndex = entityIndex;                              
+                    if((t_temp > Epsilon) && (t_temp < Result.t)) {
+                        Result.t = t_temp;
+                        Result.p = ro + Result.t*rd;
+                        Result.n = n;
+                        Result.EntityMat = CurrentEntity.Model.Materials[GetMaterialIndex(CurrentEntity.Model, BaseVertex)];
+                        Result.EntityIndex = EntityIndex;                              
                     }
                 }
             }
         }
     }
 
-    return result;
+    return Result;
 }
 
 vec3
-TracePath(Scene *scene, vec3 ro, vec3 rd, u32 pathDepth) {
-    CollisionInfo collision = {};
-    f32 NEE_Attenuation = 1.0f;
-
-    collision = CollisionRoutine(scene, ro, rd);
-    Entity *entity = &scene->entities[collision.entityIndex];
-    
-    if(collision.t == FLT_MAX)
+SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
+    if(SampleCount < 1) 
         return vec3(0.0f, 0.0f, 0.0f);
-    if(entity->isEmitter)
-        return entity->emission.flux * entity->emission.color;
-    if(pathDepth == 0)
+
+    vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);
+    u32 LightCount = 0;
+    for(u32 EntityIndex = 0; EntityIndex < (u32)Scene->Entities.Size; EntityIndex++) {
+        f32 DistToLight = 0.0f;
+        vec3 LightRay = vec3(0.0f, 0.0f, 0.0f);
+        f32 Attenuation = 0.0f;
+        f32 Visibility = 0.0f;
+        entity Light = {};
+        
+        if(Scene->Entities[EntityIndex].IsEmitter) {
+            Light = Scene->Entities[EntityIndex];
+            if(Light.IsShape) { //--- Shape Light ---
+                switch(Light.Shape.Type) {
+                    case SPHERE: {
+                        DistToLight = magnitude(Light.Offset - p);
+                        LightRay = normalize(Light.Offset - p);
+                        Attenuation = 1.0f / max(1.0f, DistToLight * DistToLight);
+                        f32 Theta = (f32)atan(Light.Shape.Radius / DistToLight);
+
+                        for(u32 SampleIndex = 0; SampleIndex < SampleCount; SampleIndex++) {
+                            f32 R1 = absf((f32)cos((f32)g_RNG.rand_u32()));
+                            f32 R2 = absf((f32)cos((f32)g_RNG.rand_u32()));
+                            f32 SolidAngle = 2.0f * (f32)PI * (1.0f - (f32)cos(Theta));                     
+                            f32 qSolidAngle = (1.0f - R2 * SolidAngle);
+
+                            f32 X = (f32)cos(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
+                            f32 Y = (f32)sin(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
+                            f32 Z = R2;
+                            
+                            vec3 Sample = vec3(X, Y, Z);
+                            vec3 Offset = Sample - vec3(0.0f, 0.0f, 1.0f);
+                            Sample = LightRay + Offset;
+                            
+                            vec3 ro = p;                    
+                            vec3 rd = Sample;
+                            collision_info Collision = CollisionRoutine(Scene, ro, rd);
+                            if(Collision.t < FLT_MAX && Collision.EntityIndex == EntityIndex) {
+                                Visibility += 1.0f;
+                            }
+                        }
+                        Visibility /= (f32)SampleCount;
+                        
+                    } break;
+                        
+                    default: {
+                    } break;
+                }
+            } else { //--- Model Light ---
+                //TODO
+            }
+        }
+
+        DirectLight += Visibility * Attenuation * Light.Emission.Flux * Light.Emission.Color;        
+    }
+
+    LightCount = (LightCount > 0)? LightCount : 1; //prevents division by zero
+    return DirectLight / (f32)LightCount;
+}
+
+vec3
+TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
+    collision_info Collision = {};
+
+    Collision = CollisionRoutine(Scene, ro, rd);
+    entity Entity = Scene->Entities[Collision.EntityIndex];
+    material EntityMat = Collision.EntityMat;
+    
+    if(Collision.t == FLT_MAX)
+        return vec3(0.0f, 0.0f, 0.0f);
+    if(Entity.IsEmitter)
+        return Entity.Emission.Flux * Entity.Emission.Color;
+    if(PathDepth <= 1)
         return vec3(0.0f, 0.0f, 0.0f);
                 
-    vec3 BRDF = collision.entityMat.diffuse / (f32)PI;
-    f32 cosTheta = max(0.0f, dot(collision.n, -rd));
+    vec3 BRDF = EntityMat.Diffuse / (f32)PI;
+    f32 cosTheta = max(0.0f, dot(Collision.n, -rd));
+    vec3 DirectLight = SampleDirectLight(Scene, Collision.p, nDirectSamples);
     
-    ro = collision.p;
-    rd = UniformSampleHemisphere(collision.n);
+    ro = Collision.p;
+    rd = UniformSampleHemisphere(Collision.n);
     
-    vec3 OutgoingRadiance = BRDF * TracePath(scene, ro, rd, pathDepth - 1) * cosTheta;
+    vec3 OutgoingRadiance = BRDF * TracePath(Scene, ro, rd, PathDepth - 1, nDirectSamples) * cosTheta + DirectLight;
     return OutgoingRadiance;
 }
 
 void
-Draw(Camera *camera, Scene *scene) {
-    int pathDepth = 4;
-    
-    if(camera->updated || scene->updated) {
-        memset(camera->film.sumBuffer, (u8)0, camera->film.pixelWidth * camera->film.pixelHeight * sizeof(u32) * 4);
-        camera->sampleCount = 0;
-        camera->updated = false;
-        scene->updated = false;
+Draw(camera *Camera, scene *Scene, u32 PathDepth, u32 nDirectSamples) {
+
+    if(Camera->Updated || Scene->Updated) {
+        memset(Camera->Film.SumBuffer, (u8)0, Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4);
+        Camera->SampleCount = 0;
+        Camera->Updated = false;
+        Scene->Updated = false;
     }
 
-    for(int y = 0; y < camera->film.pixelHeight; y++) {    
-        for(int x = 0; x < camera->film.pixelWidth; x++) {
-            f32 xDist = ((x / (f32)camera->film.pixelWidth) - 0.5f) * camera->film.worldSize.x;
-            f32 yDist = ((y / (f32)camera->film.pixelHeight) - 0.5f) * camera->film.worldSize.y;
-            vec3 pFilm = camera->pos + (camera->dir * camera->film.dist) + (camera->right * xDist) + (camera->up * yDist);
-            vec3 ro = camera->pos;
-            vec3 rd = normalize(pFilm - camera->pos);
+    for(int y = 0; y < Camera->Film.PixelHeight; y++) {    
+        for(int x = 0; x < Camera->Film.PixelWidth; x++) {
+            f32 xDist = ((x / (f32)Camera->Film.PixelWidth) - 0.5f) * Camera->Film.WorldSize.x;
+            f32 yDist = ((y / (f32)Camera->Film.PixelHeight) - 0.5f) * Camera->Film.WorldSize.y;
+            vec3 pFilm = Camera->Pos + (Camera->Dir * Camera->Film.Dist) + (Camera->Right * xDist) + (Camera->Up * yDist);
+            vec3 ro = Camera->Pos;
+            vec3 rd = normalize(pFilm - Camera->Pos);
 
-            vec3 finalColor = TracePath(scene, ro, rd, pathDepth);
-//            for(int i = 0; i < 5; i++) {
-//                if(magnitude(finalColor) > 0)
-//                    break;
-//                finalColor = TracePath(scene, ro, rd, pathDepth);
-//            }
+            vec3 finalColor = TracePath(Scene, ro, rd, PathDepth, nDirectSamples);
             
             finalColor /= 1.0f + magnitude(finalColor);
             finalColor = vec3((f32)pow((double)finalColor.x, (double)(1.0/2.2)), //gamma correction
                               (f32)pow((double)finalColor.y, (double)(1.0/2.2)),
                               (f32)pow((double)finalColor.z, (double)(1.0/2.2)));
-            //finalColor = vec3((f32)sqrt(finalColor.x), (f32)sqrt(finalColor.y), (f32)sqrt(finalColor.z));
             
-            u32 color = get_u32_color(finalColor * scene->skyColor);
-            u32 filmIndex = (y * camera->film.pixelWidth) + x;     
-            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 0] += (color >> 0) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 1] += (color >> 8) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 2] += (color >> 16) & 0xFF;
-            ((u32 *)camera->film.sumBuffer)[(filmIndex * 4) + 3] += (color >> 24) & 0xFF;
+            u32 Color = Get_u32Color(finalColor);
+            u32 FilmIndex = (y * Camera->Film.PixelWidth) + x;     
+            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 0] += (Color >> 0) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 1] += (Color >> 8) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 2] += (Color >> 16) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 3] += (Color >> 24) & 0xFF;
         }
     }
-    camera->sampleCount++;
-    u32 totalPixelChannels = camera->film.pixelWidth * camera->film.pixelHeight * 4;
-    for(u32 i = 0; i < totalPixelChannels; i++) {
-        ((u8 *)camera->film.buffer)[i] = (u8) ((f32)(((u32 *)camera->film.sumBuffer)[i]) / (f32)camera->sampleCount);
+    Camera->SampleCount++;
+    u32 TotalPixelChannels = Camera->Film.PixelWidth * Camera->Film.PixelHeight * 4;
+    for(u32 i = 0; i < TotalPixelChannels; i++) {
+        ((u8 *)Camera->Film.Buffer)[i] = (u8) ((f32)(((u32 *)Camera->Film.SumBuffer)[i]) / (f32)Camera->SampleCount);
     }
 
 }
