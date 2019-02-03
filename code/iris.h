@@ -9,6 +9,7 @@
 #include "string.cpp"
 #include "array.cpp"
 #include "math.h"
+#include "multithread.cpp"
 #include "renderer.cpp"
 #include "file_loader.cpp"
 #include "demo_scenes.h"

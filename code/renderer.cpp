@@ -190,6 +190,7 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
                         Attenuation = 1.0f / max(1.0f, DistToLight * DistToLight);
                         f32 Theta = (f32)atan(Light.Shape.Radius / DistToLight);
 
+                        Visibility = 0.0f;
                         for(u32 SampleIndex = 0; SampleIndex < SampleCount; SampleIndex++) {
                             f32 R1 = absf((f32)cos((f32)g_RNG.rand_u32()));
                             f32 R2 = absf((f32)cos((f32)g_RNG.rand_u32()));
@@ -212,7 +213,7 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
                             }
                         }
                         Visibility /= (f32)SampleCount;
-                        
+
                     } break;
                         
                     default: {
@@ -237,37 +238,38 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
     Collision = CollisionRoutine(Scene, ro, rd);
     entity Entity = Scene->Entities[Collision.EntityIndex];
     material EntityMat = Collision.EntityMat;
-    
+    if(Collision.EntityIndex == 0) {
+        int a = 0;
+        a++;
+    }
+
+    vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);    
     if(Collision.t == FLT_MAX)
         return vec3(0.0f, 0.0f, 0.0f);
     if(Entity.IsEmitter)
-        return Entity.Emission.Flux * Entity.Emission.Color;
+        DirectLight += Entity.Emission.Flux * Entity.Emission.Color;
     if(PathDepth <= 1)
         return vec3(0.0f, 0.0f, 0.0f);
                 
     vec3 BRDF = EntityMat.Diffuse / (f32)PI;
-    f32 cosTheta = max(0.0f, dot(Collision.n, -rd));
-    vec3 DirectLight = SampleDirectLight(Scene, Collision.p, nDirectSamples);
+    f32 cosTheta = dot(Collision.n, -rd);
+    DirectLight += SampleDirectLight(Scene, Collision.p, nDirectSamples);
     
     ro = Collision.p;
     rd = UniformSampleHemisphere(Collision.n);
-    
-    vec3 OutgoingRadiance = BRDF * TracePath(Scene, ro, rd, PathDepth - 1, nDirectSamples) * cosTheta + DirectLight;
+        
+    vec3 OutgoingRadiance = BRDF * TracePath(Scene, ro, rd, PathDepth - 1, nDirectSamples) * absf(cosTheta) + DirectLight;
     return OutgoingRadiance;
 }
 
 void
-Draw(camera *Camera, scene *Scene, u32 PathDepth, u32 nDirectSamples) {
-
-    if(Camera->Updated || Scene->Updated) {
-        memset(Camera->Film.SumBuffer, (u8)0, Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4);
-        Camera->SampleCount = 0;
-        Camera->Updated = false;
-        Scene->Updated = false;
-    }
-
-    for(int y = 0; y < Camera->Film.PixelHeight; y++) {    
-        for(int x = 0; x < Camera->Film.PixelWidth; x++) {
+DrawRect(camera *Camera, scene *Scene,
+         u32 PathDepth, u32 nDirectSamples,
+         int xStart, int yStart,
+         int xEnd, int yEnd) {
+    
+    for(int y = yStart; y < yEnd; y++) {    
+        for(int x = xStart; x < xEnd; x++) {
             f32 xDist = ((x / (f32)Camera->Film.PixelWidth) - 0.5f) * Camera->Film.WorldSize.x;
             f32 yDist = ((y / (f32)Camera->Film.PixelHeight) - 0.5f) * Camera->Film.WorldSize.y;
             vec3 pFilm = Camera->Pos + (Camera->Dir * Camera->Film.Dist) + (Camera->Right * xDist) + (Camera->Up * yDist);
@@ -289,12 +291,57 @@ Draw(camera *Camera, scene *Scene, u32 PathDepth, u32 nDirectSamples) {
             ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 3] += (Color >> 24) & 0xFF;
         }
     }
+}
+
+void
+Draw(camera *Camera, scene *Scene, u32 PathDepth, u32 nDirectSamples) {
+    if(Camera->Updated || Scene->Updated) {
+        memset(Camera->Film.SumBuffer, (u8)0, Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4);
+        Camera->SampleCount = 0;
+        Camera->Updated = false;
+        Scene->Updated = false;
+    }
+
+    if(Multithreading.Enabled) {
+        const u32 nRects = 32;
+        int RectHeight = Camera->Film.PixelHeight / nRects;
+        int Leftover = Camera->Film.PixelHeight % nRects;
+        u32 WorkMap[nRects];
+        memset(WorkMap, 0, sizeof(u32) * nRects);
+        u32 RectsDrawn = 0;
+        while(RectsDrawn < nRects) {
+            for(u32 ThreadIndex = 0; ThreadIndex < Multithreading.MaxThreads; ThreadIndex++) {
+                if(!Multithreading.Threads[ThreadIndex].joinable()) {
+                    for(u32 MapIndex = 0; MapIndex < nRects; MapIndex++) {
+                        if(!WorkMap[MapIndex]) {
+                            int xStart = 0;
+                            int yStart = MapIndex * RectHeight;
+                            int xEnd = Camera->Film.PixelWidth;
+                            int yEnd = yStart + RectHeight;
+                            Multithreading.Threads[ThreadIndex] = std::thread(DrawRect, Camera, Scene, PathDepth, nDirectSamples, xStart, yStart, xEnd, yEnd);
+                            WorkMap[MapIndex] = 1;
+                            RectsDrawn++;
+
+                            break;
+                        }
+                    }
+                }
+            }
+            for(u32 ThreadIndex = 0; ThreadIndex < Multithreading.MaxThreads; ThreadIndex++) {
+                if(Multithreading.Threads[ThreadIndex].joinable())
+                    Multithreading.Threads[ThreadIndex].join();
+            }
+        }
+        
+    } else {
+        DrawRect(Camera, Scene, PathDepth, nDirectSamples, 0, 0, Camera->Film.PixelWidth, Camera->Film.PixelHeight);
+    }
+
     Camera->SampleCount++;
     u32 TotalPixelChannels = Camera->Film.PixelWidth * Camera->Film.PixelHeight * 4;
     for(u32 i = 0; i < TotalPixelChannels; i++) {
         ((u8 *)Camera->Film.Buffer)[i] = (u8) ((f32)(((u32 *)Camera->Film.SumBuffer)[i]) / (f32)Camera->SampleCount);
     }
-
 }
 
 

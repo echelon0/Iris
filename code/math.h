@@ -884,16 +884,16 @@ make_scaling_matrix(float x, float y, float z, float w) {
 inline bool
 ray_intersects_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2, vec3 n, float &t) {
     float Epsilon = 0.0001f;
-    if(dot(n, -rd) < Epsilon)
+    if(dot(-n, rd) < Epsilon)
         return false;
     t = dot(n, v0 - ro) / dot(n, rd);
     if(t < Epsilon)
         return false;
-    t -= Epsilon;
-    vec3 Q = rd * t + ro;
-    if(dot(n, (cross(Q - v0, v1 - v0))) < 0.0f ||
-       dot(n, (cross(Q - v1, v2 - v1))) < 0.0f ||
-       dot(n, (cross(Q - v2, v0 - v2))) < 0.0f) {
+
+    vec3 Q = ro + t*rd;
+    if(dot(-n, (cross(Q - v0, v1 - v0))) < 0.0f ||
+       dot(-n, (cross(Q - v1, v2 - v1))) < 0.0f ||
+       dot(-n, (cross(Q - v2, v0 - v2))) < 0.0f) {
         return false;
     }
     return true;

@@ -157,6 +157,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
             scene Scene = {};
             InitCamera(&Camera, WindowWidth, WindowHeight);
             DemoScene4(&Camera, &Scene);
+            EnableMultithreading();
             //----------------------------------------------
 
             while(g_IsRunning) {
@@ -166,7 +167,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 //------------------- Iris -------------------
                 ProcessInput(&Camera);
                 u32 PathDepth = 4;
-                u32 nDirectSamples = 2;
+                u32 nDirectSamples = 0;
                 if(Camera.SampleCount < 1000) {
                     Draw(&Camera, &Scene, PathDepth, nDirectSamples);
                 }
@@ -192,7 +193,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 }
 
                 char WindowText[256];
-                sprintf(WindowText, "Iris -- fps:%.2f, Samples: %d", 1000.0f / (FrameDuration + ((WaitTime > 0)? WaitTime : 0)), Camera.SampleCount);
+                sprintf(WindowText, "Iris -- fps:%.2f, Samples: %d -- Thread count: %d", 1000.0f / (FrameDuration + ((WaitTime > 0)? WaitTime : 0)), Camera.SampleCount, Multithreading.MaxThreads);
                 SetWindowTextA(Window, WindowText);
                 g_iTime++;
             }

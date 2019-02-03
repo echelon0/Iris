@@ -126,14 +126,14 @@ LoadObj(char *FileName) {
         } else if(strcmp(lineID, "f") == 0) {
             int v1=0, v2=0, v3=0;
             int vt1=0, vt2=0, vt3=0;
-            int vnPlaceholder=0;
+            int vn1=0, vn2=0, vn3=0;
 
             if(has_v && has_vt && has_vn) { // v/vt/vn
-                fscanf(objFileHandle, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &v1, &vt1, &vnPlaceholder, &v2, &vt2, &vnPlaceholder, &v3, &vt3, &vnPlaceholder);
+                fscanf(objFileHandle, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &v1, &vt1, &vn1, &v2, &vt2, &vn2, &v3, &vt3, &vn3);
             } else if(has_v && has_vt && !has_vn) { // v/vt
                 fscanf(objFileHandle, "%d/%d %d/%d %d/%d\n", &v1, &vt1, &v2, &vt2, &v3, &vt3);
             } else if(has_v && !has_vt && has_vn) { // v//vn
-                fscanf(objFileHandle, "%d//%d %d//%d %d//%d\n", &v1, &vnPlaceholder, &v2, &vnPlaceholder, &v3, &vnPlaceholder);
+                fscanf(objFileHandle, "%d//%d %d//%d %d//%d\n", &v1, &vn1, &v2, &vn2, &v3, &vn3);
             } else if(has_v && !has_vt && !has_vn) { // v
                 fscanf(objFileHandle, "%d %d %d\n", &v1, &v2, &v3);
             } else {
@@ -147,11 +147,13 @@ LoadObj(char *FileName) {
             TempVertices[1].TexCoord = TexCoords[vt2-1];
             TempVertices[2].Position = Positions[v3-1];
             TempVertices[2].TexCoord = TexCoords[vt3-1];
-
-            TempVertices[0].Normal = normalize(cross(normalize(TempVertices[0].Position - TempVertices[1].Position), //left-handed Normal
-                                                     normalize(TempVertices[2].Position - TempVertices[1].Position)));
-            TempVertices[1].Normal = TempVertices[0].Normal;
-            TempVertices[2].Normal = TempVertices[0].Normal;
+            TempVertices[0].Normal = Normals[vn1 - 1];
+            TempVertices[1].Normal = Normals[vn1 - 1];
+            TempVertices[2].Normal = Normals[vn1 - 1];                                                                        
+//            TempVertices[0].Normal = normalize(cross(normalize(TempVertices[2].Position - TempVertices[1].Position), 
+//                                                     normalize(TempVertices[0].Position - TempVertices[1].Position)));
+//            TempVertices[1].Normal = TempVertices[0].Normal;
+//            TempVertices[2].Normal = TempVertices[0].Normal;
             for(int i = 0; i < 3; i++) {
                 if(!Materials[currentMatIndex].recorded) {
                     material finalMat = {};
