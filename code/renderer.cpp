@@ -221,7 +221,7 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
             } else { //--- Model Light ---
                 //TODO
             }
-            
+
             DirectLight += Visibility * Attenuation * Light->Emission.Flux * Light->Emission.Color;         
         }       
     }
