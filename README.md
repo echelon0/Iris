@@ -4,10 +4,10 @@ This is a CPU-based path tracer.
 
 ## Features
 
-Interactive - Users can move around the scene with the arrow keys.
-Multithreaded - Sampling is distributed among multiple processor threads.
-Next Event Estimation - Direct light is sampled at each light bounce using a monte carlo method to estimate occluders.
-3D Models - Iris can render 3D models however due to the high amount of computations required and that Iris runs on the CPU, this can be very slow depending on the model's triangle count.
+Interactive - Users can move around the scene with the arrow keys. <br>
+Multithreaded - Sampling is distributed among multiple processor threads. <br>
+Next Event Estimation - Direct light is sampled at each light bounce using a monte carlo method to estimate occluders. <br>
+3D Models - Iris can render 3D models however due to the high amount of computations required and that Iris runs on the CPU, this can be very slow depending on the model's triangle count. <br>
 
 ## Gallery
 
