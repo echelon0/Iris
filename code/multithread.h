@@ -3,6 +3,6 @@
 
 struct iris_multithread {
     bool Enabled = false;
-    u32 MaxThreads = 4;
-    std::thread Threads[4];    
+    u32 MaxThreads = 3;
+    std::thread Threads[3];    
 } Multithreading;

@@ -178,17 +178,16 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
         vec3 LightRay = vec3(0.0f, 0.0f, 0.0f);
         f32 Attenuation = 0.0f;
         f32 Visibility = 0.0f;
-        entity Light = {};
         
         if(Scene->Entities[EntityIndex].IsEmitter) {
-            Light = Scene->Entities[EntityIndex];
-            if(Light.IsShape) { //--- Shape Light ---
-                switch(Light.Shape.Type) {
+            entity *Light = &Scene->Entities[EntityIndex];
+            if(Light->IsShape) { //--- Shape Light ---
+                switch(Light->Shape.Type) {
                     case SPHERE: {
-                        DistToLight = magnitude(Light.Offset - p);
-                        LightRay = normalize(Light.Offset - p);
+                        DistToLight = magnitude(Light->Offset - p);
+                        LightRay = normalize(Light->Offset - p);
                         Attenuation = 1.0f / max(1.0f, DistToLight * DistToLight);
-                        f32 Theta = (f32)atan(Light.Shape.Radius / DistToLight);
+                        f32 Theta = (f32)atan(Light->Shape.Radius / DistToLight);
 
                         Visibility = 0.0f;
                         for(u32 SampleIndex = 0; SampleIndex < SampleCount; SampleIndex++) {
@@ -222,13 +221,14 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
             } else { //--- Model Light ---
                 //TODO
             }
-        }
-
-        DirectLight += Visibility * Attenuation * Light.Emission.Flux * Light.Emission.Color;        
+            
+            DirectLight += Visibility * Attenuation * Light->Emission.Flux * Light->Emission.Color;         
+        }       
     }
 
     LightCount = (LightCount > 0)? LightCount : 1; //prevents division by zero
     return DirectLight / (f32)LightCount;
+
 }
 
 vec3

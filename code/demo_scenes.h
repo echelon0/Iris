@@ -204,8 +204,8 @@ DemoScene4(camera *Camera, scene *Scene) {
     Light.IsShape = true;
     Light.Shape.Type = SPHERE;    
     Light.IsEmitter = true;    
-    Light.Shape.Radius = 0.95f;
-    Light.Emission.Flux = 500.0f;
+    Light.Shape.Radius = 1.0f;
+    Light.Emission.Flux = 1000.0f;
 
     Light.Emission.Color = rgb(255, 0, 0);    
     Light.Offset = vec3(3.0f, 1.5f, 3.0f);    

@@ -5,6 +5,7 @@ REM call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxil
 call "A:\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 popd
 
+if not exist ..\build mkdir ..\build
 pushd ..\build
 del *.pdb 1> NUL 2> NUL
 
@@ -14,3 +15,6 @@ set linker_flags=-incremental:no User32.lib Gdi32.lib D3DCompiler.lib D3D11.lib 
 cl %compiler_flags% ..\code\win32_main.cpp /link %linker_flags%
 
 popd
+
+cd ..\build
+

@@ -8,7 +8,7 @@ struct array {
     array() {
         Size = 0;
         Capacity = 1;
-        Data = (T *)calloc(Capacity, sizeof(T));
+        Data = (T *)malloc(Capacity * sizeof(T));
     }
     
     T &operator[](int I) {

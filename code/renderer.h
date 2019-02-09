@@ -59,10 +59,8 @@ struct entity {
     bool IsShape;
     bool IsEmitter;
     emission_profile Emission;
-    union {
-        model Model;
-        primitive Shape;
-    };
+    model Model;
+    primitive Shape;
     vec3 Offset;
 };
 
