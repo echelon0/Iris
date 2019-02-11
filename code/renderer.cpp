@@ -1,27 +1,12 @@
 
 #include "renderer.h"
-
-void
-InitCamera(camera *Camera, u32 WindowWidth, u32 WindowHeight) {
-    Camera->Pos = vec3(0.0f, 0.0f, 0.0f);
-    Camera->Dir = vec3(0.0f, 0.0f, 1.0f);
-    Camera->Up = vec3(0.0f, 1.0f, 0.0f);
-    Camera->Right = vec3(1.0f, 0.0f, 0.0f);
-            
-    Camera->Film.PixelWidth = WindowWidth;
-    Camera->Film.PixelHeight = WindowHeight;
-    Camera->Film.Buffer = (void *)malloc(Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32));
-    Camera->Film.SumBuffer = (void *)calloc(Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4, 1);
-    f32 aspect = (f32)WindowWidth / (f32)WindowHeight;
-    Camera->Film.WorldSize = vec2(aspect, 1.0f);
-    Camera->Film.Dist = 1.0f;
-}
+#include "camera.cpp"
 
 int
 GetMaterialIndex(model Model, int VertexIndex) {
     for(int BaseIndex = 0; BaseIndex < Model.MaterialBases.Size; BaseIndex++) {
         if(VertexIndex >= Model.MaterialBases[BaseIndex] &&
-           (VertexIndex < Model.MaterialBases[BaseIndex]+ Model.MaterialSizes[BaseIndex])) {
+           (VertexIndex < Model.MaterialBases[BaseIndex] + Model.MaterialSizes[BaseIndex])) {
             return BaseIndex;
         }
     };
@@ -228,7 +213,6 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
 
     LightCount = (LightCount > 0)? LightCount : 1; //prevents division by zero
     return DirectLight / (f32)LightCount;
-
 }
 
 vec3
@@ -238,22 +222,19 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
     Collision = CollisionRoutine(Scene, ro, rd);
     entity Entity = Scene->Entities[Collision.EntityIndex];
     material EntityMat = Collision.EntityMat;
-    if(Collision.EntityIndex == 0) {
-        int a = 0;
-        a++;
-    }
 
     vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);    
     if(Collision.t == FLT_MAX)
         return vec3(0.0f, 0.0f, 0.0f);
-    if(Entity.IsEmitter)
-        DirectLight += Entity.Emission.Flux * Entity.Emission.Color;
     if(PathDepth <= 1)
         return vec3(0.0f, 0.0f, 0.0f);
                 
     vec3 BRDF = EntityMat.Diffuse / (f32)PI;
     f32 cosTheta = dot(Collision.n, -rd);
-    DirectLight += SampleDirectLight(Scene, Collision.p, nDirectSamples);
+    if(Entity.IsEmitter)
+        DirectLight += Entity.Emission.Flux * Entity.Emission.Color;
+    else
+        DirectLight += SampleDirectLight(Scene, Collision.p, nDirectSamples);
     
     ro = Collision.p;
     rd = UniformSampleHemisphere(Collision.n);
@@ -295,13 +276,6 @@ DrawRect(camera *Camera, scene *Scene,
 
 void
 Draw(camera *Camera, scene *Scene, u32 PathDepth, u32 nDirectSamples) {
-    if(Camera->Updated || Scene->Updated) {
-        memset(Camera->Film.SumBuffer, (u8)0, Camera->Film.PixelWidth * Camera->Film.PixelHeight * sizeof(u32) * 4);
-        Camera->SampleCount = 0;
-        Camera->Updated = false;
-        Scene->Updated = false;
-    }
-
     if(Multithreading.Enabled) {
         const u32 nRects = 32;
         int RectHeight = Camera->Film.PixelHeight / nRects;

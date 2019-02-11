@@ -226,15 +226,15 @@ DemoScene4(camera *Camera, scene *Scene) {
 
 void 
 DemoScene5(camera *Camera, scene *Scene) {
-    Camera->Pos = vec3(-0.5f, 0.0f, 8.0f);
-    Camera->Dir = vec3(0.0f, 0.0f, -1.0f);
+    Camera->Pos = vec3(-0.5f, 0.0f, 0.0f);
+    Camera->Dir = vec3(0.0f, 0.0f, 1.0f);
     Camera->Up = vec3(0.0f, 1.0f, 0.0f);
     Camera->Right = vec3(1.0f, 0.0f, 0.0f);
     Camera->Film.Dist = 1.0f;
 
     entity Entity = {};
     Entity.IsShape = false;
-    Entity.Model = LoadObj("cube.obj");
+    Entity.Model = LoadObj("monkey.obj");
     Entity.Offset = vec3(-0.5f, 0.0, 4.0f);
     Entity.Model.Materials[0].Diffuse = rgb(200, 250, 255);
     Scene->Entities.PushBack(Entity);

@@ -1,24 +1,4 @@
 
-struct film {
-    void *Buffer;
-    void *SumBuffer;    
-    int PixelWidth;
-    int PixelHeight;
-    vec2 WorldSize;
-    f32 Dist;
-};
-
-struct camera {
-    vec3 Pos;
-    vec3 Dir;
-    vec3 Up;
-    vec3 Right;
-
-    film Film;
-    u32 SampleCount;
-    bool Updated;
-};
-
 struct vertex_attribute {
     vec3 Position;
     vec3 Normal;

@@ -6,11 +6,15 @@
 #define f32 float
 
 #include <Windows.h>
+#include <Windowsx.h>
 #include <stdio.h>
-#include "iris.h"
 #include <thread>
+#include "math.h"
+
 
 static bool g_IsRunning = false;
+static ivec2 WindowSize = ivec2(0, 0);
+static ivec2 ClientCenter = ivec2(0, 0);
 static u32 g_iTime = 0;
 
 struct input_state {
@@ -18,12 +22,27 @@ struct input_state {
     bool A_KEY;
     bool S_KEY;
     bool D_KEY;
+    bool SPACE_KEY;
+    bool CTRL_KEY;
+
+    bool LEFT_MOUSE_DOWN;
+    ivec2 PREV_POS;
+    ivec2 CURRENT_POS;
+    bool SET_DRAG_VECTOR;
+    ivec2 PER_FRAME_DRAG_VECTOR;
+    vec2 PER_FRAME_DRAG_VECTOR_PERCENT;
 };
 
-input_state g_inputState = {};
+input_state GlobalInputState = {};
+
+#include "iris.h"
 
 LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
-    LRESULT result = 0;
+    if(GetActiveWindow() != hWnd) {
+        return DefWindowProc(hWnd, Msg, wParam, lParam);
+    }
+    
+    LRESULT result = 0;    
     switch(Msg) {
         case WM_CLOSE: {
             g_IsRunning = false;
@@ -35,34 +54,63 @@ LRESULT CALLBACK CallWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lPara
         } break;
 
         case WM_KEYDOWN: {
+            if(wParam == VK_ESCAPE) {
+                g_IsRunning = false;
+            }
             if(wParam == 'W') { //W_KEY
-                g_inputState.W_KEY = true;
+                GlobalInputState.W_KEY = true;
             }
             if(wParam == 'A') { //A_KEY
-                g_inputState.A_KEY = true;
+                GlobalInputState.A_KEY = true;
             }
             if(wParam == 'S') { //S_KEY
-                g_inputState.S_KEY = true;
+                GlobalInputState.S_KEY = true;
             }
             if(wParam == 'D') { //D_KEY
-                g_inputState.D_KEY = true;
+                GlobalInputState.D_KEY = true;
+            }
+            if(wParam == VK_SPACE) {
+                GlobalInputState.SPACE_KEY = true;              
+            }
+            if(wParam == VK_CONTROL) {
+                GlobalInputState.CTRL_KEY = true;              
+            }                    
+        } break;
+
+        case WM_KEYUP: {       
+            if(wParam == 'W') { //W_KEY
+                GlobalInputState.W_KEY = false;
+            }
+            if(wParam == 'A') { //A_KEY
+                GlobalInputState.A_KEY = false;
+            }
+            if(wParam == 'S') { //S_KEY
+                GlobalInputState.S_KEY = false;
+            }
+            if(wParam == 'D') { //D_KEY
+                GlobalInputState.D_KEY = false;
+            }
+            if(wParam == VK_SPACE) {
+                GlobalInputState.SPACE_KEY = false;              
+            }
+            if(wParam == VK_CONTROL) {
+                GlobalInputState.CTRL_KEY = false;              
             }       
         } break;
 
-        case WM_KEYUP: {
-            if(wParam == 'W') { //W_KEY
-                g_inputState.W_KEY = false;
-            }
-            if(wParam == 'A') { //A_KEY
-                g_inputState.A_KEY = false;
-            }
-            if(wParam == 'S') { //S_KEY
-                g_inputState.S_KEY = false;
-            }
-            if(wParam == 'D') { //D_KEY
-                g_inputState.D_KEY = false;
-            }       
+        case WM_LBUTTONDOWN: {
+            GlobalInputState.LEFT_MOUSE_DOWN = true;
         } break;
+
+        case WM_LBUTTONUP: {
+            GlobalInputState.LEFT_MOUSE_DOWN = false;
+        } break;            
+
+        case WM_MOUSEMOVE: {
+            GlobalInputState.PREV_POS = GlobalInputState.CURRENT_POS;
+            GlobalInputState.CURRENT_POS.x = GET_X_LPARAM(lParam);
+            GlobalInputState.CURRENT_POS.y = GET_Y_LPARAM(lParam);
+        } break;            
 
         default: {
             result = DefWindowProc(hWnd, Msg, wParam, lParam);
@@ -96,39 +144,15 @@ GetElapsedTime(LARGE_INTEGER beginCount) {
     }
 }
 
-void
-ProcessInput(camera *Camera) {
-
-    //camera control
-    f32 speed = 0.5f;
-    vec3 velocity = vec3(0.0f, 0.0f, 0.0f);
-    if(g_inputState.W_KEY) {
-        velocity += (Camera->Dir * speed);
-    }
-    if(g_inputState.A_KEY) {
-        velocity += (-Camera->Right * speed);
-    }
-    if(g_inputState.S_KEY) {
-        velocity += (-Camera->Dir * speed);
-    }
-    if(g_inputState.D_KEY) {
-        velocity += (Camera->Right * speed);  
-    }
-    f32 disp = magnitude(velocity);
-    if(disp > 0.0001f) {
-        Camera->Updated = true;
-        if(disp > 1.0f) 
-            velocity = velocity * (disp / (f32)sqrt(2.0f));
-        Camera->Pos += velocity;
-    }
-}
-
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     int WindowWidth = 960;
     int WindowHeight = 580;
+    WindowSize = ivec2(WindowWidth, WindowHeight);
     f32 Aspect = (f32)WindowWidth / (f32)WindowHeight;
     ivec2 WindowPos = CalcWindowPos(WindowWidth, WindowHeight);
+    ClientCenter = ivec2(WindowPos.x + WindowSize.x / 2, WindowPos.y + WindowSize.y / 2);
+
     
     WNDCLASS WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -136,7 +160,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     WindowClass.hCursor = LoadCursor(0, IDC_ARROW);
     WindowClass.hInstance = hInstance;
     WindowClass.lpszClassName = "Iris";   
-
+    
     if(RegisterClass(&WindowClass)) {
         HWND Window = CreateWindow(
             WindowClass.lpszClassName,
@@ -156,18 +180,23 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
             camera Camera = {};
             scene Scene = {};
             InitCamera(&Camera, WindowWidth, WindowHeight);
-            DemoScene4(&Camera, &Scene);
+            DemoScene2(&Camera, &Scene);
             EnableMultithreading();
             //----------------------------------------------
 
             while(g_IsRunning) {
+                if(GetActiveWindow() == Window) {
+                    SetCursorPos(ClientCenter.x, ClientCenter.y);
+                    ShowCursor(0);
+                }
                 LARGE_INTEGER BeginCount;
                 QueryPerformanceCounter(&BeginCount);
 
                 //------------------- Iris -------------------
                 ProcessInput(&Camera);
+                UpdateCameraScene(&Camera, &Scene);
                 u32 PathDepth = 8;
-                u32 nDirectSamples = 0;
+                u32 nDirectSamples = 1;
                 if(Camera.SampleCount < 512) {
                     Draw(&Camera, &Scene, PathDepth, nDirectSamples);
                 }
