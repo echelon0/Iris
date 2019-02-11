@@ -15,7 +15,7 @@ This is a CPU-based path tracer.
 ![512samples-8depth-0ds-demo4](https://user-images.githubusercontent.com/35866844/52524068-924af280-2c4d-11e9-8d52-190e330196fa.PNG)
 
 512 Samples with a max path depth of 8 with 1 direct light sample:
-![512samples-8depth-1ds-demo4](https://user-images.githubusercontent.com/35866844/52524071-9e36b480-2c4d-11e9-8fc4-04d53b6697da.PNG)
+![512samples-8depth-1ds-demo4](https://user-images.githubusercontent.com/35866844/52599367-4ba3f680-2e0d-11e9-836a-8e6ad627452f.PNG)
 
 ## Controls
 - ESC key closes the application.<br>
