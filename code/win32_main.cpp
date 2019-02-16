@@ -180,7 +180,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
             camera Camera = {};
             scene Scene = {};
             InitCamera(&Camera, WindowWidth, WindowHeight);
-            DemoScene2(&Camera, &Scene);
+            DemoScene5(&Camera, &Scene);
             EnableMultithreading();
             //----------------------------------------------
 

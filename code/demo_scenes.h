@@ -224,70 +224,72 @@ DemoScene4(camera *Camera, scene *Scene) {
     Scene->Entities.PushBack(Light);
 }
 
+
 void 
 DemoScene5(camera *Camera, scene *Scene) {
-    Camera->Pos = vec3(-0.5f, 0.0f, 0.0f);
+    Camera->Pos = vec3(0.0f, 0.0f, -8.0f);
     Camera->Dir = vec3(0.0f, 0.0f, 1.0f);
     Camera->Up = vec3(0.0f, 1.0f, 0.0f);
     Camera->Right = vec3(1.0f, 0.0f, 0.0f);
-    Camera->Film.Dist = 1.0f;
-
+    Camera->Film.Dist = 0.75f;
+    
     entity Entity = {};
-    Entity.IsShape = false;
-    Entity.Model = LoadObj("monkey.obj");
-    Entity.Offset = vec3(-0.5f, 0.0, 4.0f);
-    Entity.Model.Materials[0].Diffuse = rgb(200, 250, 255);
-    Scene->Entities.PushBack(Entity);
-
-
-    //ground
     Entity.IsShape = true;
     Entity.Shape.Type = PLANE;
-    Entity.Shape.Material.Diffuse = rgb(102, 255, 153);
-    Entity.Shape.pPlane = vec3(0.0, -2.5f, 0.0);
-    Entity.Shape.nPlane = normalize(vec3(0.0f, 1.0f, 0.0f));
-    Scene->Entities.PushBack(Entity);
-
+    
     //left wall
-    Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
-    Entity.Shape.pPlane = vec3(-4.0, 0.0f, 0.0);
+    Entity.Shape.Material.Diffuse = rgb(255, 0, 0);
+    Entity.Shape.pPlane = vec3(-5.0, 0.0f, 0.0);
     Entity.Shape.nPlane = vec3(1.0f, 0.0f, 0.0f);
     Scene->Entities.PushBack(Entity);
 
     //Right wall
-    Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
-    Entity.Shape.pPlane = vec3(4.0, 0.0f, 0.0);
+    Entity.Shape.Material.Diffuse = rgb(0, 255, 0);
+    Entity.Shape.pPlane = vec3(5.0, 0.0f, 0.0);
     Entity.Shape.nPlane = vec3(-1.0f, 0.0f, 0.0f);
     Scene->Entities.PushBack(Entity);
 
     //front wall
     Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
-    Entity.Shape.pPlane = vec3(0.0, 0.0f, 8.0);
+    Entity.Shape.pPlane = vec3(0.0, 0.0f, 5.0);
     Entity.Shape.nPlane = vec3(0.0f, 0.0f, -1.0f);
     Scene->Entities.PushBack(Entity);
 
     //back wall
     Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
-    Entity.Shape.pPlane = vec3(0.0, 0.0f, -2.0);
+    Entity.Shape.pPlane = vec3(0.0, 0.0f, -9.0);
     Entity.Shape.nPlane = vec3(0.0f, 0.0f, 1.0f);
     Scene->Entities.PushBack(Entity);
 
+    //ground
+    Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
+    Entity.Shape.pPlane = vec3(0.0, -5.0f, 0.0);
+    Entity.Shape.nPlane = vec3(0.0f, 1.0f, 0.0f);
+    Scene->Entities.PushBack(Entity);
+    
     //ceiling
-    Entity.Shape.pPlane = vec3(0.0, 10.0f, 0.0);
+    Entity.Shape.pPlane = vec3(0.0, 4.0f, 0.0);
     Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
     Entity.Shape.nPlane = vec3(0.0f, -1.0f, 0.0f);
+    Scene->Entities.PushBack(Entity);
+
+    Entity.IsShape = true;
+    Entity.Shape.Type = SPHERE;
+    Entity.Shape.Material.Diffuse = rgb(0, 0, 255);
+    Entity.Shape.Radius = 1.5f;
+    Entity.Offset = vec3(-2.0f, -3.5f, 2.0f);
     Scene->Entities.PushBack(Entity);    
-    
-    //Light
+
+    //Lights
     entity Light = {};
     Light.IsShape = true;
     Light.Shape.Type = SPHERE;    
     Light.IsEmitter = true;    
-    Light.Shape.Radius = 4.0f;
-    Light.Emission.Flux = 100.0f;
-    Light.Emission.Color = rgb(255, 255, 255);
-    Light.Offset = vec3(2.0f, 8.0f, 2.0f);    
+    Light.Shape.Radius = 1.0f;
+    Light.Emission.Flux = 1000.0f;
+
+    Light.Emission.Color = rgb(255, 255, 200);    
+    Light.Offset = vec3(0.0f, 3.0f, 2.0f);    
     Scene->Entities.PushBack(Light);
 }
-
 

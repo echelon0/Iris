@@ -226,7 +226,7 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
     vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);    
     if(Collision.t == FLT_MAX)
         return vec3(0.0f, 0.0f, 0.0f);
-    if(PathDepth <= 1)
+    if(PathDepth <= 0)
         return vec3(0.0f, 0.0f, 0.0f);
                 
     vec3 BRDF = EntityMat.Diffuse / (f32)PI;
