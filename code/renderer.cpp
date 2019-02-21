@@ -152,7 +152,7 @@ CollisionRoutine(scene *Scene, vec3 ro, vec3 rd) {
 }
 
 vec3
-SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
+SampleDirectLight(scene *Scene, vec3 p, vec3 n, u32 SampleCount) {
     if(SampleCount < 1) 
         return vec3(0.0f, 0.0f, 0.0f);
 
@@ -176,18 +176,18 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
 
                         Visibility = 0.0f;
                         for(u32 SampleIndex = 0; SampleIndex < SampleCount; SampleIndex++) {
-                            f32 R1 = absf((f32)cos((f32)g_RNG.rand_u32()));
-                            f32 R2 = absf((f32)cos((f32)g_RNG.rand_u32()));
-                            f32 SolidAngle = 2.0f * (f32)PI * (1.0f - (f32)cos(Theta));                     
-                            f32 qSolidAngle = (1.0f - R2 * SolidAngle);
+                            f32 R1 = ((f32)g_RNG.rand_u32() / (f32)UINT_MAX);
+                            f32 R2 = ((f32)g_RNG.rand_u32() / (f32)UINT_MAX);
+                            R2 = R2 * (1.0f - (f32)cos(Theta)) + (f32)cos(Theta);
 
-                            f32 X = (f32)cos(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
-                            f32 Y = (f32)sin(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
-                            f32 Z = R2;
+                            vec3 X = ortho(LightRay);
+                            vec3 Y = cross(LightRay, X);
                             
-                            vec3 Sample = vec3(X, Y, Z);
-                            vec3 Offset = Sample - vec3(0.0f, 0.0f, 1.0f);
-                            Sample = LightRay + Offset;
+                            f32 Xm = (f32)cos(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
+                            f32 Ym = (f32)sin(2.0f * (f32)PI * R1) * (f32)sqrt(1.0f - R2*R2);
+                            f32 Zm = R2;
+                            
+                            vec3 Sample = LightRay * Zm + X * Xm + Y * Ym;
                             
                             vec3 ro = p;                    
                             vec3 rd = Sample;
@@ -203,11 +203,9 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
                     default: {
                     } break;
                 }
-            } else { //--- Model Light ---
-                //TODO
             }
-
-            DirectLight += Visibility * Attenuation * Light->Emission.Flux * Light->Emission.Color;         
+            f32 cosTheta = max(0, dot(LightRay, n));
+            DirectLight += Visibility * Attenuation * Light->Emission.Flux * Light->Emission.Color * cosTheta;
         }       
     }
 
@@ -216,7 +214,7 @@ SampleDirectLight(scene *Scene, vec3 p, u32 SampleCount) {
 }
 
 vec3
-TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
+TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples, bool FirstBounce) {
     collision_info Collision = {};
 
     Collision = CollisionRoutine(Scene, ro, rd);
@@ -225,21 +223,25 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples) {
 
     vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);    
     if(Collision.t == FLT_MAX)
-        return vec3(0.0f, 0.0f, 0.0f);
+        return vec3(1.0f, 1.0f, 1.0f);
     if(PathDepth <= 0)
         return vec3(0.0f, 0.0f, 0.0f);
                 
     vec3 BRDF = EntityMat.Diffuse / (f32)PI;
-    f32 cosTheta = dot(Collision.n, -rd);
+    
+    f32 cosTheta = 1.0f;    
+    if(!FirstBounce)
+        cosTheta = max(0, dot(Collision.n, -rd));
+    
     if(Entity.IsEmitter)
         DirectLight += Entity.Emission.Flux * Entity.Emission.Color;
     else
-        DirectLight += SampleDirectLight(Scene, Collision.p, nDirectSamples);
+        DirectLight += SampleDirectLight(Scene, Collision.p, Collision.n, nDirectSamples);
     
     ro = Collision.p;
     rd = UniformSampleHemisphere(Collision.n);
-        
-    vec3 OutgoingRadiance = BRDF * TracePath(Scene, ro, rd, PathDepth - 1, nDirectSamples) * absf(cosTheta) + DirectLight;
+
+    vec3 OutgoingRadiance = BRDF * TracePath(Scene, ro, rd, PathDepth - 1, nDirectSamples, false) * cosTheta + DirectLight;
     return OutgoingRadiance;
 }
 
@@ -257,19 +259,22 @@ DrawRect(camera *Camera, scene *Scene,
             vec3 ro = Camera->Pos;
             vec3 rd = normalize(pFilm - Camera->Pos);
 
-            vec3 finalColor = TracePath(Scene, ro, rd, PathDepth, nDirectSamples);
+            vec3 finalColor = TracePath(Scene, ro, rd, PathDepth, nDirectSamples, true);
             
-            finalColor /= 1.0f + magnitude(finalColor);
-            finalColor = vec3((f32)pow((double)finalColor.x, (double)(1.0/2.2)), //gamma correction
-                              (f32)pow((double)finalColor.y, (double)(1.0/2.2)),
-                              (f32)pow((double)finalColor.z, (double)(1.0/2.2)));
+            finalColor = vec3(finalColor.x / (1.0f + finalColor.x),
+                              finalColor.y / (1.0f + finalColor.y),
+                              finalColor.z / (1.0f + finalColor.z));
+            finalColor = vec3((f32)sqrt((double)finalColor.x), //gamma correction
+                              (f32)sqrt((double)finalColor.y),
+                              (f32)sqrt((double)finalColor.z));
             
             u32 Color = Get_u32Color(finalColor);
-            u32 FilmIndex = (y * Camera->Film.PixelWidth) + x;     
-            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 0] += (Color >> 0) & 0xFF;
-            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 1] += (Color >> 8) & 0xFF;
-            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 2] += (Color >> 16) & 0xFF;
-            ((u32 *)Camera->Film.SumBuffer)[(FilmIndex * 4) + 3] += (Color >> 24) & 0xFF;
+            u32 FilmIndex = (y * Camera->Film.PixelWidth) + x;
+            u32 Base = FilmIndex * 4;
+            ((u32 *)Camera->Film.SumBuffer)[Base + 0] += (Color >> 0) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[Base + 1] += (Color >> 8) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[Base + 2] += (Color >> 16) & 0xFF;
+            ((u32 *)Camera->Film.SumBuffer)[Base + 3] += (Color >> 24) & 0xFF;
         }
     }
 }

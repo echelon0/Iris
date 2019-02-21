@@ -205,7 +205,7 @@ DemoScene4(camera *Camera, scene *Scene) {
     Light.Shape.Type = SPHERE;    
     Light.IsEmitter = true;    
     Light.Shape.Radius = 1.0f;
-    Light.Emission.Flux = 1000.0f;
+    Light.Emission.Flux = 10.0f;
 
     Light.Emission.Color = rgb(255, 0, 0);    
     Light.Offset = vec3(3.0f, 1.5f, 3.0f);    
@@ -275,7 +275,7 @@ DemoScene5(camera *Camera, scene *Scene) {
 
     Entity.IsShape = true;
     Entity.Shape.Type = SPHERE;
-    Entity.Shape.Material.Diffuse = rgb(0, 0, 255);
+    Entity.Shape.Material.Diffuse = rgb(255, 255, 255);
     Entity.Shape.Radius = 1.5f;
     Entity.Offset = vec3(-2.0f, -3.5f, 2.0f);
     Scene->Entities.PushBack(Entity);    
@@ -286,7 +286,7 @@ DemoScene5(camera *Camera, scene *Scene) {
     Light.Shape.Type = SPHERE;    
     Light.IsEmitter = true;    
     Light.Shape.Radius = 1.0f;
-    Light.Emission.Flux = 1000.0f;
+    Light.Emission.Flux = 50.0f / (2.0f * (f32)PI * Light.Shape.Radius * Light.Shape.Radius);
 
     Light.Emission.Color = rgb(255, 255, 200);    
     Light.Offset = vec3(0.0f, 3.0f, 2.0f);    
