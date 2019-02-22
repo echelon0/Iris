@@ -152,7 +152,7 @@ CollisionRoutine(scene *Scene, vec3 ro, vec3 rd) {
 }
 
 vec3
-SampleDirectLight(scene *Scene, vec3 p, vec3 n, u32 SampleCount) {
+SampleDirectLight(scene *Scene, collision_info Entity, u32 SampleCount) {
     if(SampleCount < 1) 
         return vec3(0.0f, 0.0f, 0.0f);
 
@@ -169,8 +169,8 @@ SampleDirectLight(scene *Scene, vec3 p, vec3 n, u32 SampleCount) {
             if(Light->IsShape) { //--- Shape Light ---
                 switch(Light->Shape.Type) {
                     case SPHERE: {
-                        DistToLight = magnitude(Light->Offset - p);
-                        LightRay = normalize(Light->Offset - p);
+                        DistToLight = magnitude(Light->Offset - Entity.p);
+                        LightRay = normalize(Light->Offset - Entity.p);
                         Attenuation = 1.0f / max(1.0f, DistToLight * DistToLight);
                         f32 Theta = (f32)atan(Light->Shape.Radius / DistToLight);
 
@@ -189,7 +189,7 @@ SampleDirectLight(scene *Scene, vec3 p, vec3 n, u32 SampleCount) {
                             
                             vec3 Sample = LightRay * Zm + X * Xm + Y * Ym;
                             
-                            vec3 ro = p;                    
+                            vec3 ro = Entity.p;                    
                             vec3 rd = Sample;
                             collision_info Collision = CollisionRoutine(Scene, ro, rd);
                             if(Collision.t < FLT_MAX && Collision.EntityIndex == EntityIndex) {
@@ -204,8 +204,8 @@ SampleDirectLight(scene *Scene, vec3 p, vec3 n, u32 SampleCount) {
                     } break;
                 }
             }
-            f32 cosTheta = max(0, dot(LightRay, n));
-            DirectLight += Visibility * Attenuation * Light->Emission.Flux * Light->Emission.Color * cosTheta;
+            f32 cosTheta = max(0, dot(LightRay, Entity.n));
+            DirectLight += Visibility * Attenuation * Light->Irradiance * 2.0f * (f32)PI * Entity.EntityMat.Diffuse * cosTheta;
         }       
     }
 
@@ -221,9 +221,11 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples, boo
     entity Entity = Scene->Entities[Collision.EntityIndex];
     material EntityMat = Collision.EntityMat;
 
-    vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);    
+    vec3 DirectLight = vec3(0.0f, 0.0f, 0.0f);
+    if(Entity.IsEmitter)
+        return Entity.Irradiance;
     if(Collision.t == FLT_MAX)
-        return vec3(1.0f, 1.0f, 1.0f);
+        return lerp(rgb(179, 203, 255), rgb(96, 157, 255), rd.y);
     if(PathDepth <= 0)
         return vec3(0.0f, 0.0f, 0.0f);
                 
@@ -233,11 +235,8 @@ TracePath(scene *Scene, vec3 ro, vec3 rd, u32 PathDepth, u32 nDirectSamples, boo
     if(!FirstBounce)
         cosTheta = max(0, dot(Collision.n, -rd));
     
-    if(Entity.IsEmitter)
-        DirectLight += Entity.Emission.Flux * Entity.Emission.Color;
-    else
-        DirectLight += SampleDirectLight(Scene, Collision.p, Collision.n, nDirectSamples);
-    
+    DirectLight += SampleDirectLight(Scene, Collision, nDirectSamples);
+
     ro = Collision.p;
     rd = UniformSampleHemisphere(Collision.n);
 
@@ -261,7 +260,7 @@ DrawRect(camera *Camera, scene *Scene,
 
             vec3 finalColor = TracePath(Scene, ro, rd, PathDepth, nDirectSamples, true);
             
-            finalColor = vec3(finalColor.x / (1.0f + finalColor.x),
+            finalColor = vec3(finalColor.x / (1.0f + finalColor.x), //tone mapping
                               finalColor.y / (1.0f + finalColor.y),
                               finalColor.z / (1.0f + finalColor.z));
             finalColor = vec3((f32)sqrt((double)finalColor.x), //gamma correction

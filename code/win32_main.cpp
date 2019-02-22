@@ -180,7 +180,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
             camera Camera = {};
             scene Scene = {};
             InitCamera(&Camera, WindowWidth, WindowHeight);
-            DemoScene4(&Camera, &Scene);
+            DemoScene5(&Camera, &Scene);
             EnableMultithreading();
             //----------------------------------------------
 
@@ -195,7 +195,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 //------------------- Iris -------------------
                 ProcessInput(&Camera);
                 UpdateCameraScene(&Camera, &Scene);
-                u32 PathDepth = 4;
+                u32 PathDepth = 2;
                 u32 nDirectSamples = 1;
                 if(Camera.SampleCount < 512) {
                     Draw(&Camera, &Scene, PathDepth, nDirectSamples);

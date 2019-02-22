@@ -30,15 +30,10 @@ struct primitive {
     vec3 pPlane;
 };
 
-struct emission_profile {
-    f32 Flux;
-    vec3 Color;
-};
-
 struct entity {
     bool IsShape;
     bool IsEmitter;
-    emission_profile Emission;
+    vec3 Irradiance;    
     model Model;
     primitive Shape;
     vec3 Offset;
