@@ -1,6 +1,6 @@
 # Iris
 
-This is a CPU-based path tracer.
+A CPU-based path tracer.
 
 ## Features
 
