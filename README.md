@@ -1,6 +1,6 @@
 # Iris
 
-This is a CPU-based path tracer.
+A CPU-based path tracer.
 
 ## Features
 
@@ -11,11 +11,11 @@ This is a CPU-based path tracer.
 
 ## Gallery
 
+512 Samples with a max path depth of 2 with 1 direct light sample:
+![512samples-2depth-1ds-demo5](https://user-images.githubusercontent.com/35866844/53224671-6d318900-362a-11e9-81dc-8580bd022f75.PNG)
+
 512 Samples with a max path depth of 8 and no direct light sampling:
 ![512samples-8depth-0ds-demo4](https://user-images.githubusercontent.com/35866844/52524068-924af280-2c4d-11e9-8d52-190e330196fa.PNG)
-
-512 Samples with a max path depth of 8 with 1 direct light sample:
-![512samples-8depth-1ds-demo4](https://user-images.githubusercontent.com/35866844/52599367-4ba3f680-2e0d-11e9-836a-8e6ad627452f.PNG)
 
 ## Controls
 - ESC key closes the application.<br>
