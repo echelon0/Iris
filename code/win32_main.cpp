@@ -195,8 +195,8 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
                 //------------------- Iris -------------------
                 ProcessInput(&Camera);
                 UpdateCameraScene(&Camera, &Scene);
-                u32 PathDepth = 2;
-                u32 nDirectSamples = 1;
+                u32 PathDepth = 16;
+                u32 nDirectSamples = 4;
                 if(Camera.SampleCount < 512) {
                     Draw(&Camera, &Scene, PathDepth, nDirectSamples);
                 }
