@@ -10,7 +10,7 @@
 #include "array.cpp"
 #include "multithread.cpp"
 #include "renderer.cpp"
-#include "file_loader.cpp"
+#include "obj_loader.cpp"
 #include "demo_scenes.h"
 
 

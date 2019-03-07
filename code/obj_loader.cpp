@@ -1,16 +1,6 @@
 
-int ScanWord(char *str, char *substr) { //returns chars read
-    int count = 0;
-    while(*str && (*str != ' ') && (*str != '\n')) {
-        *substr++ = *str++;
-        count++;
-    }
-    *substr = '\0';
-    return count;
-}
-
 bool
-LoadObj(char *FileName, model *LoadedModel) {
+LoadOBJ(char *FileName, model &LoadedModel) {
     LoadedModel = {};
     
     char FolderPath[] = "../models/";
@@ -162,27 +152,27 @@ LoadObj(char *FileName, model *LoadedModel) {
                     finalMat.Exponent = Materials[currentMatIndex].Mat.Exponent;
                     finalMat.Transparency = Materials[currentMatIndex].Mat.Transparency;
                     
-                    LoadedModel->Materials.PushBack(finalMat);
-                    LoadedModel->MaterialBases.PushBack(LoadedModel->VertexAttributes.Size);
-                    if(LoadedModel->Materials.Size >= 2) {
-                        int PrevMatSize = LoadedModel->MaterialBases[LoadedModel->MaterialBases.Size - 1] - LoadedModel->MaterialBases[LoadedModel->MaterialBases.Size - 2];
-                        LoadedModel->MaterialSizes.PushBack(PrevMatSize);
+                    LoadedModel.Materials.PushBack(finalMat);
+                    LoadedModel.MaterialBases.PushBack(LoadedModel.VertexAttributes.Size);
+                    if(LoadedModel.Materials.Size >= 2) {
+                        int PrevMatSize = LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 1] - LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 2];
+                        LoadedModel.MaterialSizes.PushBack(PrevMatSize);
                     }
                     Materials[currentMatIndex].recorded = true;
                 }
-                LoadedModel->VertexAttributes.PushBack(TempVertices[i]);
+                LoadedModel.VertexAttributes.PushBack(TempVertices[i]);
             }
         }
     }
     
-    if(LoadedModel->Materials.Size >= 2) {
-        int PrevMatSize = LoadedModel->VertexAttributes.Size - LoadedModel->MaterialBases[LoadedModel->MaterialBases.Size - 2];
-        LoadedModel->MaterialSizes.PushBack(PrevMatSize);
-    } else if(LoadedModel->Materials.Size == 1) {
-        LoadedModel->MaterialSizes.PushBack(LoadedModel->VertexAttributes.Size);
+    if(LoadedModel.Materials.Size >= 2) {
+        int PrevMatSize = LoadedModel.VertexAttributes.Size - LoadedModel.MaterialBases[LoadedModel.MaterialBases.Size - 2];
+        LoadedModel.MaterialSizes.PushBack(PrevMatSize);
+    } else if(LoadedModel.Materials.Size == 1) {
+        LoadedModel.MaterialSizes.PushBack(LoadedModel.VertexAttributes.Size);
     }
 
-    StrCopy(LoadedModel->StrName, FileName);
+    StrCopy(LoadedModel.StrName, FileName);
     
     delete FilePath;
     delete Positions.Data;
